@@ -16,8 +16,8 @@ import com.amazonaws.services.s3.model.S3ObjectSummary;
 public class FTPFunctions {
     Socket socket;
     DataOutputStream outputStream;
-    private String accessKey = "AKIA4Y4VQJAB65FA6NCF";
-    private String secretKey = "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";
+    private String accessKey = "";
+    private String secretKey = "";
     private Regions region = Regions.AP_SOUTHEAST_2;
     private AmazonS3 s3Client;
     private String bucketName = "streamlitss"; // replace with your bucket name
