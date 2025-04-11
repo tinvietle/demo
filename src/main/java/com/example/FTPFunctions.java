@@ -4,36 +4,41 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.List;
-
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.regions.Regions;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.amazonaws.services.s3.model.ListObjectsV2Result;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
+import java.io.File;
 
 public class FTPFunctions {
     Socket socket;
     DataOutputStream outputStream;
-    private String accessKey = "";
-    private String secretKey = "";
-    private Regions region = Regions.AP_SOUTHEAST_2;
-    private AmazonS3 s3Client;
-    private String bucketName = "streamlitss"; // replace with your bucket name
+    
 
     public FTPFunctions (Socket socket) {
         this.socket = socket;
         try {
             this.outputStream = new DataOutputStream(socket.getOutputStream());
-            BasicAWSCredentials credentials = new BasicAWSCredentials(accessKey, secretKey);
-            s3Client = AmazonS3ClientBuilder.standard()
-                    .withRegion(region)
-                    .withCredentials(new AWSStaticCredentialsProvider(credentials))
-                    .build();
         } catch (Exception e) {
             System.out.println("Error initializing output stream: " + e.getMessage());
         }           
+    }
+
+    private String statusMessage(int statusCode){
+        String message = "";
+        switch (statusCode) {
+            case 200:
+                message = "OK";
+                break;
+            case 400:
+                message = "Bad Request";
+                break;
+            case 404:
+                message = "Not Found";
+                break;
+            case 500:
+                message = "Internal Server Error";
+                break;
+            default:
+                message = "Unknown Status Code";
+        }
+        return message;
     }
 
     public void sendFile(){
@@ -54,16 +59,24 @@ public class FTPFunctions {
             e.printStackTrace();
         }
     }
-    public void listFiles(){
+    public void listFiles(String directoryPath){
+        // List files and folders in current directory
         System.out.println("Listing files...");
         try {
-            ListObjectsV2Result result = s3Client.listObjectsV2(bucketName);
-            List<S3ObjectSummary> objects = result.getObjectSummaries();
-            for (S3ObjectSummary os : objects) {
-                System.out.println(" - " + os.getKey() + "  " + "(size = " + os.getSize() + ")");
-                outputStream.writeUTF(" - " + os.getKey());
+            File directory = new File(directoryPath);
+            String[] files = directory.list();
+            if (files != null) {
+                String statusMessage = statusMessage(200);
+                outputStream.writeUTF(statusMessage);
+                for (String file : files) {
+                    System.out.println(file);
+                    outputStream.writeUTF(file);
+                }
+            } else {
+                String statusMessage = statusMessage(404);
+                outputStream.writeUTF(statusMessage);
+                System.out.println("No files found in the directory.");
             }
-            outputStream.writeUTF("Files listed successfully");
         } catch (IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();

@@ -48,7 +48,9 @@ public class ServerHandler implements Runnable {
                         ftp.receiveFile();
                         break;
                     case "ls":
-                        ftp.listFiles();
+                        // Get current directory path
+                        String currentDir = System.getProperty("user.dir");
+                        ftp.listFiles(currentDir);
                         break;
                     case "delete":
                         ftp.deleteFile();
