@@ -16,11 +16,15 @@ public class ClientSending implements Runnable{
 
         Scanner bp = new Scanner(System.in);
         DataOutputStream gui = null;
+        ClientHandler clientHandler = new ClientHandler(s);
         try {
             gui = new DataOutputStream(s.getOutputStream());
             while (true) {
                 String tam2 = bp.nextLine();
                 gui.writeUTF(tam2);
+                if (tam2.equals("put")){
+                    clientHandler.openFileChoser();
+                }
 
             }
         } catch (IOException ex) {

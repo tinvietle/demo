@@ -9,6 +9,7 @@ public class ServerHandler implements Runnable {
     private Socket socket;
     private DataInputStream input;
     private DataOutputStream output;
+    private String serverDirectory = "src/main/java/com/example/storage";
     
 
     public ServerHandler(Socket socket) {
@@ -37,15 +38,15 @@ public class ServerHandler implements Runnable {
     public void run() {
         try {
             String message;
-            FTPFunctions ftp = new FTPFunctions(socket);
+            FTPFunctions ftp = new FTPFunctions(socket, serverDirectory);
             while ((message = input.readUTF()) != null) {
                 System.out.println("Received: " + message);
                 switch (message) {
                     case "put":
-                        ftp.sendFile();
+                        ftp.receiveFile();
                         break;
                     case "get":
-                        ftp.receiveFile();
+                        ftp.sendFile();
                         break;
                     case "ls":
                         // Get current directory path
