@@ -60,10 +60,16 @@ public class ServerHandler implements Runnable {
                         ftp.listFiles(currentDir);
                         break;
                     case "delete":
-                        ftp.deleteFile();
+                        // Get the file name from message
+                        String fileToDelete = parts[1];
+                        String filePathToDelete = serverDirectory + "/" + fileToDelete;
+                        ftp.deleteFile(filePathToDelete);
                         break;
                     case "rename":
-                        ftp.renameFile();
+                        // Get old and new file names from message
+                        String oldName = parts[1];
+                        String newName = parts[2];
+                        ftp.renameFile(serverDirectory, oldName, newName);
                         break;
                     case "create":
                         ftp.createDirectory();

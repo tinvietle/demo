@@ -100,20 +100,39 @@ public class FTPFunctions {
         }
     }
 
-    public void deleteFile() {
+    public void deleteFile(String filePath) {
         System.out.println("Deleting file...");
         try {
-            outputStream.writeUTF("File deleted successfully");
+            File file = new File(filePath);
+            if (file.delete()) {
+                System.out.println("File deleted successfully");
+                outputStream.writeUTF("File deleted successfully");
+            } else {
+                System.out.println("Failed to delete file");
+                outputStream.writeUTF("File deleted successfully");
+            }
+            
         } catch (IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
     }
 
-    public void renameFile() {
+    public void renameFile(String dir, String oldName, String newName) {
         System.out.println("Renaming file...");
         try {
-            outputStream.writeUTF("File renamed successfully");
+            String oldFilePath = dir + "/" + oldName;
+            String newFilePath = dir + "/" + newName;
+            File oldFile = new File(oldFilePath);
+            File newFile = new File(newFilePath);
+            if (oldFile.renameTo(newFile)) {
+                System.out.println("File renamed successfully");
+                outputStream.writeUTF("File renamed successfully");
+            } else {
+                System.out.println("Failed to rename file");
+                outputStream.writeUTF("Failed to rename file");
+            }
+            
         } catch (IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
