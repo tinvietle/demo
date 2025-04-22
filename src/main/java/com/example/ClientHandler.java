@@ -5,15 +5,25 @@ import java.net.Socket;
 import java.io.DataOutputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.io.FileOutputStream;
+import java.io.FileInputStream;
 
 import javax.swing.JFileChooser;
 
 public class ClientHandler {
     private Socket socket;
+    private DataInputStream inputStream;
+    private DataOutputStream outputStream;
 
     public ClientHandler(Socket socket) {
         // Constructor implementation
         this.socket = socket;
+        try {
+            this.inputStream = new DataInputStream(socket.getInputStream());
+            this.outputStream = new DataOutputStream(socket.getOutputStream());
+        } catch (IOException e) {
+            System.out.println("Error initializing streams: " + e.getMessage());
+        }
     }
 
     public void openFileChoser() {
@@ -28,27 +38,54 @@ public class ClientHandler {
     }
 
     public void uploadFile(File file) {
-        try (DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
-                DataInputStream dis = new DataInputStream(socket.getInputStream())) {
-            // Send file name and size
-            dos.writeUTF(file.getName());
-            dos.writeLong(file.length());
+        // Send file name and size
+        try {
+            outputStream.writeUTF(file.getName());
+            outputStream.writeLong(file.length());
 
             // Send file data
             byte[] buffer = new byte[4096];
             int bytesRead;
-            try (java.io.FileInputStream fis = new java.io.FileInputStream(file)) {
+            try (FileInputStream fis = new java.io.FileInputStream(file)) {
                 while ((bytesRead = fis.read(buffer)) != -1) {
-                    dos.write(buffer, 0, bytesRead);
+                    outputStream.write(buffer, 0, bytesRead);
                 }
             }
 
             // Receive confirmation from server
-            String response = dis.readUTF();
+            String response = inputStream.readUTF();
             System.out.println("Server response: " + response);
         } catch (IOException e) {
             e.printStackTrace();
         }
 
+    }
+
+    public void receiveFile() {
+        try {
+            String fileName = inputStream.readUTF();
+            long fileSize = inputStream.readLong();
+
+            // Get current directory path
+            String currentDir = System.getProperty("user.dir");
+            File file = new File(currentDir + "/" + fileName);
+            try (FileOutputStream fos = new FileOutputStream(file)) {
+                byte[] buffer = new byte[4096];
+                int bytesRead;
+                long totalBytesRead = 0;
+
+                while (totalBytesRead < fileSize && (bytesRead = inputStream.read(buffer)) != -1) {
+                    fos.write(buffer, 0, bytesRead);
+                    totalBytesRead += bytesRead;
+                }
+            }
+
+            // Send confirmation to server
+            outputStream.writeUTF("File received successfully: " + fileName);
+            System.out.println("File received successfully: " + fileName);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

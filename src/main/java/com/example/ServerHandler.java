@@ -41,12 +41,18 @@ public class ServerHandler implements Runnable {
             FTPFunctions ftp = new FTPFunctions(socket, serverDirectory);
             while ((message = input.readUTF()) != null) {
                 System.out.println("Received: " + message);
+                // Split the message into command and arguments
+                String[] parts = message.split(" ");
+                message = parts[0];
                 switch (message) {
                     case "put":
                         ftp.receiveFile();
                         break;
                     case "get":
-                        ftp.sendFile();
+                        // Get the file name from message
+                        String filename = parts[1];
+                        String filePath = serverDirectory + "/" + filename;
+                        ftp.sendFile(filePath);
                         break;
                     case "ls":
                         // Get current directory path

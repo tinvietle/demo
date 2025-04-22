@@ -48,8 +48,32 @@ public class FTPFunctions {
         return message;
     }
 
-    public void sendFile() {
+    public void sendFile(String filePath) {
         System.out.println("Sending file...");
+        try {
+            File file = new File(filePath);
+            if (file.exists()) {
+                // Trigger Client to receive File instead of normal text
+                outputStream.writeUTF("put");
+                // Send file name and size
+                outputStream.writeUTF(file.getName());
+                outputStream.writeLong(file.length());
+                // Send file data
+                byte[] buffer = new byte[4096];
+                int bytesRead;
+                try (java.io.FileInputStream fis = new java.io.FileInputStream(file)) {
+                    while ((bytesRead = fis.read(buffer)) != -1) {
+                        outputStream.write(buffer, 0, bytesRead);
+                    }
+                }
+
+                // Receive confirmation from client
+                String response = inputStream.readUTF();
+                System.out.println("Client response: " + response);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void listFiles(String directoryPath) {
