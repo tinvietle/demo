@@ -9,14 +9,17 @@ public class ServerHandler implements Runnable {
     private Socket socket;
     private DataInputStream input;
     private DataOutputStream output;
-    private String serverDirectory = "src/main/java/com/example/storage";
+    private String username;
+    private String serverDirectory;
     
 
-    public ServerHandler(Socket socket) {
+    public ServerHandler(Socket socket, String clientName) {
         this.socket = socket;
         try {
             input = new DataInputStream(socket.getInputStream());
             output = new DataOutputStream(socket.getOutputStream());
+            username = clientName;
+            serverDirectory = "src/main/java/com/example/storage" + "/" + username;
             helloClient();
             
         } catch (IOException e) {
@@ -56,8 +59,7 @@ public class ServerHandler implements Runnable {
                         break;
                     case "ls":
                         // Get current directory path
-                        String currentDir = System.getProperty("user.dir");
-                        ftp.listFiles(currentDir);
+                        ftp.listFiles();
                         break;
                     case "delete":
                         // Get the file name from message

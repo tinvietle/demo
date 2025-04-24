@@ -25,7 +25,7 @@ public final class App {
             ServerSocket socket = new ServerSocket(1234); 
             while (true) { 
                 final Socket connection = socket.accept(); 
-                ServerHandler each_client = new ServerHandler(connection);
+                ServerHandler each_client = new ServerHandler(connection, "tin");
                 exec.execute(each_client); 
             }
         } catch (IOException e) {

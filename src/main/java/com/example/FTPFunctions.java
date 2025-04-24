@@ -66,21 +66,18 @@ public class FTPFunctions {
                         outputStream.write(buffer, 0, bytesRead);
                     }
                 }
-
-                // Receive confirmation from client
-                String response = inputStream.readUTF();
-                System.out.println("Client response: " + response);
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    public void listFiles(String directoryPath) {
+    public void listFiles() {
         // List files and folders in current directory
         System.out.println("Listing files...");
         try {
-            File directory = new File(directoryPath);
+            System.out.println("Server Directory: " + serverDirectory);
+            File directory = new File(serverDirectory);
             String[] files = directory.list();
             if (files != null) {
                 String statusMessage = statusMessage(200);

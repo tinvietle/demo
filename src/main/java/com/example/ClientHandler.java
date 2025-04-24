@@ -51,10 +51,6 @@ public class ClientHandler {
                     outputStream.write(buffer, 0, bytesRead);
                 }
             }
-
-            // Receive confirmation from server
-            String response = inputStream.readUTF();
-            System.out.println("Server response: " + response);
         } catch (IOException e) {
             e.printStackTrace();
         }
