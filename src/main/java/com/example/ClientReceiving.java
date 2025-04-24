@@ -13,12 +13,17 @@ public class ClientReceiving implements Runnable {
 
     public void run() {
         DataInputStream nhan;
+        ClientHandler clientHandler = new ClientHandler(s);
         try {
             nhan = new DataInputStream(s.getInputStream());
             while (true) {
 
                 String tam = nhan.readUTF();
                 System.out.println(tam);
+                if (tam.equals("put")){
+                    clientHandler.receiveFile();
+                }
+
 
             }
         } catch (IOException ex) {

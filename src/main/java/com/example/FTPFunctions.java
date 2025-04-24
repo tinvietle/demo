@@ -1,14 +1,11 @@
 package com.example;
 
-import java.io.DataOutputStream;
 import java.io.DataInputStream;
-import java.io.IOException;
-import java.net.Socket;
-import java.util.List;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
-
-import javax.swing.JFileChooser;
+import java.io.IOException;
+import java.net.Socket;
 
 public class FTPFunctions {
     Socket socket;
@@ -86,36 +83,95 @@ public class FTPFunctions {
         }
     }
 
+    // Modified renameFile to accept old and new names as parameters
     public void renameFile() {
-        System.out.println("Renaming file...");
+        System.out.println("Deleting file...");
         try {
-            outputStream.writeUTF("File renamed successfully");
+            outputStream.writeUTF("File deleted successfully");
         } catch (IOException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
     }
 
-    public void createDirectory() {
-        System.out.println("Creating directory...");
-        try {
-            outputStream.writeUTF("Directory created successfully");
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+    // Modified createDirectory to accept the directory name as a parameter
+    public void createDirectory(String dirName) {
+        File newDir = new File(serverDirectory, dirName);
+        if (!newDir.exists()) {
+            if (newDir.mkdir()) {
+                try { outputStream.writeUTF("Directory created successfully: " + dirName); }
+                catch (IOException e) { e.printStackTrace(); }
+            } else {
+                try { outputStream.writeUTF("Failed to create directory: " + dirName); }
+                catch (IOException e) { e.printStackTrace(); }
+            }
+        } else {
+            try { outputStream.writeUTF("Directory already exists: " + dirName); }
+            catch (IOException e) { e.printStackTrace(); }
         }
     }
 
-    public void deleteDirectory() {
-        System.out.println("Deleting directory...");
+    // Modified deleteDirectory to accept the directory name as a parameter
+    public void deleteDirectory(String dirName) {
+        File dir = new File(serverDirectory, dirName);
         try {
-            outputStream.writeUTF("Directory deleted successfully");
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
+            if (dir.exists() && dir.isDirectory()) {
+                deleteDirectoryRecursively(dir);
+                outputStream.writeUTF("Directory deleted successfully: " + dirName);
+            } else {
+                outputStream.writeUTF("Directory does not exist or is not a directory: " + dirName);
+            }
+        } catch(IOException e) {
+            e.printStackTrace();
+            try { outputStream.writeUTF("Error deleting directory: " + e.getMessage()); }
+            catch(IOException ex) { ex.printStackTrace(); }
+        }
+    }
+    
+    // Helper method to delete a directory recursively
+    private void deleteDirectoryRecursively(File dir) {
+        File[] contents = dir.listFiles();
+        if (contents != null) {
+            for (File file : contents) {
+                if (file.isDirectory()) {
+                    deleteDirectoryRecursively(file);
+                } else {
+                    file.delete();
+                }
+            }
+        }
+        dir.delete();
+    }
+    
+    // Modified moveFile to accept source and destination names as parameters
+    public void moveFile(String sourceName, String destinationName) {
+        File sourceFile = new File(serverDirectory, sourceName);
+        File destFile = new File(serverDirectory, destinationName);
+        try {
+            if(sourceFile.exists()){
+                if(sourceFile.renameTo(destFile)){
+                    outputStream.writeUTF("File moved successfully from " + sourceName + " to " + destinationName);
+                } else {
+                    outputStream.writeUTF("Failed to move file from " + sourceName + " to " + destinationName);
+                }
+            } else {
+                outputStream.writeUTF("Source file does not exist: " + sourceName);
+            }
+        } catch(IOException e) {
+            e.printStackTrace();
+            try { outputStream.writeUTF("Error moving file: " + e.getMessage()); }
+            catch(IOException ex) { ex.printStackTrace(); }
+        }
+    }
+    
+    // Added method: printWorkingDirectory
+    public void printWorkingDirectory() {
+        try {
+            outputStream.writeUTF("Server working directory: " + serverDirectory);
+        } catch(IOException e) {
             e.printStackTrace();
         }
     }
-
+    
     public void receiveFile() {
         try {
             // Read file name and size

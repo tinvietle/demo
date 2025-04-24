@@ -28,7 +28,7 @@ public class ServerHandler implements Runnable {
         try {
             output.writeUTF("Hello Client");
             output.writeUTF("Welcome to the FTP server");
-            output.writeUTF("Please enter a command (put/get/ls/delete/rename/create/deleteDir/quit):");
+            output.writeUTF("Please enter a command: ");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -41,7 +41,9 @@ public class ServerHandler implements Runnable {
             FTPFunctions ftp = new FTPFunctions(socket, serverDirectory);
             while ((message = input.readUTF()) != null) {
                 System.out.println("Received: " + message);
-                switch (message) {
+                String[] tokens = message.split(" ");
+                String command = tokens[0];
+                switch (command) {
                     case "put":
                         ftp.receiveFile();
                         break;
@@ -49,7 +51,6 @@ public class ServerHandler implements Runnable {
                         ftp.sendFile();
                         break;
                     case "ls":
-                        // Get current directory path
                         String currentDir = System.getProperty("user.dir");
                         ftp.listFiles(currentDir);
                         break;
@@ -57,13 +58,38 @@ public class ServerHandler implements Runnable {
                         ftp.deleteFile();
                         break;
                     case "rename":
-                        ftp.renameFile();
+                        if(tokens.length >= 3){
+                            ftp.renameFile();
+                        } else {
+                            output.writeUTF("Usage: rename <oldName> <newName>");
+                        }
                         break;
-                    case "create":
-                        ftp.createDirectory();
+                    case "mkdir":
+                        if(tokens.length >= 2){
+                            ftp.createDirectory(tokens[1]);
+                        } else {
+                            output.writeUTF("Usage: mkdir <directoryName>");
+                        }
                         break;
-                    case "deleteDir":
-                        ftp.deleteDirectory();
+                    case "rmdir":
+                        if(tokens.length >= 2){
+                            ftp.deleteDirectory(tokens[1]);
+                        } else {
+                            output.writeUTF("Usage: rmdir <directoryName>");
+                        }
+                        break;
+                    case "move":
+                        if(tokens.length >= 3){
+                            ftp.moveFile(tokens[1], tokens[2]);
+                        } else {
+                            output.writeUTF("Usage: move <source> <destination>");
+                        }
+                        break;
+                    case "pwd":
+                        ftp.printWorkingDirectory();
+                        break;
+                    case "help":
+                        output.writeUTF("Available commands: put, get, ls, delete, rename <oldName> <newName>, mkdir <dirName>, rmdir <dirName>, move <source> <destination>, pwd, help, quit");
                         break;
                     case "quit":
                         System.out.println("Client disconnected");
