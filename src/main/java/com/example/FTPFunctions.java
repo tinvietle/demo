@@ -45,15 +45,36 @@ public class FTPFunctions {
         return message;
     }
 
-    public void sendFile() {
+    public void sendFile(String filePath) {
         System.out.println("Sending file...");
+        try {
+            File file = new File(filePath);
+            if (file.exists()) {
+                // Trigger Client to receive File instead of normal text
+                outputStream.writeUTF("put");
+                // Send file name and size
+                outputStream.writeUTF(file.getName());
+                outputStream.writeLong(file.length());
+                // Send file data
+                byte[] buffer = new byte[4096];
+                int bytesRead;
+                try (java.io.FileInputStream fis = new java.io.FileInputStream(file)) {
+                    while ((bytesRead = fis.read(buffer)) != -1) {
+                        outputStream.write(buffer, 0, bytesRead);
+                    }
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
-    public void listFiles(String directoryPath) {
+    public void listFiles() {
         // List files and folders in current directory
         System.out.println("Listing files...");
         try {
-            File directory = new File(directoryPath);
+            System.out.println("Server Directory: " + serverDirectory);
+            File directory = new File(serverDirectory);
             String[] files = directory.list();
             if (files != null) {
                 String statusMessage = statusMessage(200);
@@ -73,21 +94,39 @@ public class FTPFunctions {
         }
     }
 
-    public void deleteFile() {
+    public void deleteFile(String filePath) {
         System.out.println("Deleting file...");
         try {
-            outputStream.writeUTF("File deleted successfully");
+            File file = new File(filePath);
+            if (file.delete()) {
+                System.out.println("File deleted successfully");
+                outputStream.writeUTF("File deleted successfully");
+            } else {
+                System.out.println("Failed to delete file");
+                outputStream.writeUTF("File deleted successfully");
+            }
+            
         } catch (IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
     }
 
-    // Modified renameFile to accept old and new names as parameters
-    public void renameFile() {
-        System.out.println("Deleting file...");
+    public void renameFile(String dir, String oldName, String newName) {
+        System.out.println("Renaming file...");
         try {
-            outputStream.writeUTF("File deleted successfully");
+            String oldFilePath = dir + "/" + oldName;
+            String newFilePath = dir + "/" + newName;
+            File oldFile = new File(oldFilePath);
+            File newFile = new File(newFilePath);
+            if (oldFile.renameTo(newFile)) {
+                System.out.println("File renamed successfully");
+                outputStream.writeUTF("File renamed successfully");
+            } else {
+                System.out.println("Failed to rename file");
+                outputStream.writeUTF("Failed to rename file");
+            }
+            
         } catch (IOException e) {
             e.printStackTrace();
         }

@@ -9,14 +9,17 @@ public class ServerHandler implements Runnable {
     private Socket socket;
     private DataInputStream input;
     private DataOutputStream output;
-    private String serverDirectory = "src/main/java/com/example/storage";
+    private String username;
+    private String serverDirectory;
     
 
-    public ServerHandler(Socket socket) {
+    public ServerHandler(Socket socket, String clientName) {
         this.socket = socket;
         try {
             input = new DataInputStream(socket.getInputStream());
             output = new DataOutputStream(socket.getOutputStream());
+            username = clientName;
+            serverDirectory = "src/main/java/com/example/storage" + "/" + username;
             helloClient();
             
         } catch (IOException e) {
@@ -41,46 +44,52 @@ public class ServerHandler implements Runnable {
             FTPFunctions ftp = new FTPFunctions(socket, serverDirectory);
             while ((message = input.readUTF()) != null) {
                 System.out.println("Received: " + message);
-                String[] tokens = message.split(" ");
-                String command = tokens[0];
-                switch (command) {
+                // Split the message into command and arguments
+                String[] parts = message.split(" ");
+                message = parts[0];
+                switch (message) {
                     case "put":
                         ftp.receiveFile();
                         break;
                     case "get":
-                        ftp.sendFile();
+                        // Get the file name from message
+                        String filename = parts[1];
+                        String filePath = serverDirectory + "/" + filename;
+                        ftp.sendFile(filePath);
                         break;
                     case "ls":
-                        String currentDir = System.getProperty("user.dir");
-                        ftp.listFiles(currentDir);
+                        // Get current directory path
+                        ftp.listFiles();
                         break;
                     case "delete":
-                        ftp.deleteFile();
+                        // Get the file name from message
+                        String fileToDelete = parts[1];
+                        String filePathToDelete = serverDirectory + "/" + fileToDelete;
+                        ftp.deleteFile(filePathToDelete);
                         break;
                     case "rename":
-                        if(tokens.length >= 3){
-                            ftp.renameFile();
-                        } else {
-                            output.writeUTF("Usage: rename <oldName> <newName>");
-                        }
+                        // Get old and new file names from message
+                        String oldName = parts[1];
+                        String newName = parts[2];
+                        ftp.renameFile(serverDirectory, oldName, newName);
                         break;
                     case "mkdir":
-                        if(tokens.length >= 2){
-                            ftp.createDirectory(tokens[1]);
+                        if(parts.length >= 2){
+                            ftp.createDirectory(parts[1]);
                         } else {
                             output.writeUTF("Usage: mkdir <directoryName>");
                         }
                         break;
                     case "rmdir":
-                        if(tokens.length >= 2){
-                            ftp.deleteDirectory(tokens[1]);
+                        if(parts.length >= 2){
+                            ftp.deleteDirectory(parts[1]);
                         } else {
                             output.writeUTF("Usage: rmdir <directoryName>");
                         }
                         break;
                     case "move":
-                        if(tokens.length >= 3){
-                            ftp.moveFile(tokens[1], tokens[2]);
+                        if(parts.length >= 3){
+                            ftp.moveFile(parts[1], parts[2]);
                         } else {
                             output.writeUTF("Usage: move <source> <destination>");
                         }

@@ -7,6 +7,8 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.io.FileOutputStream;
+import java.io.FileInputStream;
 
 import javax.swing.JFileChooser;
 
@@ -51,10 +53,6 @@ public class ClientHandler {
                     outputStream.write(buffer, 0, bytesRead);
                 }
             }
-
-            // Receive confirmation from server
-            String response = inputStream.readUTF();
-            System.out.println("Server response: " + response);
         } catch (IOException e) {
             e.printStackTrace();
         }
