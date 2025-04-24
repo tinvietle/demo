@@ -11,11 +11,13 @@ public class FTPFunctions {
     Socket socket;
     DataOutputStream outputStream;
     DataInputStream inputStream;
+    String defaultDirectory;
     String serverDirectory;
 
     public FTPFunctions(Socket socket, String serverDirectory) {
         this.socket = socket;
         this.serverDirectory = serverDirectory;
+        this.defaultDirectory = serverDirectory;
         try {
             this.outputStream = new DataOutputStream(socket.getOutputStream());
             this.inputStream = new DataInputStream(socket.getInputStream());
@@ -242,6 +244,51 @@ public class FTPFunctions {
                     dos.writeUTF("File upload failed.");
                 }
             } catch (IOException ignored) {
+            }
+        }
+    }
+
+    public void changeDirectory(String newDirectory){
+        // Case ..
+        // Check if the new directory is out of bound of the default directory
+        if (newDirectory.equals("..")) {
+            // Check for the length of the server directory
+            if (serverDirectory.length() > defaultDirectory.length()){
+                // Get the parent directory by trimming the last part of the path
+                serverDirectory = serverDirectory.substring(0, serverDirectory.lastIndexOf(File.separator));
+                System.out.println("Changed directory to: " + serverDirectory);
+                try {
+                    outputStream.writeUTF("Changed directory to: " + serverDirectory);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            } else {
+                System.out.println("Already in the root directory: " + serverDirectory);
+                try {
+                    outputStream.writeUTF("Already in the root directory: " + serverDirectory);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        } else {
+            // Check if the new directory is a valid directory
+            String newDirPath = serverDirectory + File.separator + newDirectory;
+            File newDir = new File(newDirPath);
+            if (newDir.exists() && newDir.isDirectory()) {
+                serverDirectory = newDirPath;
+                System.out.println("Changed directory to: " + serverDirectory);
+                try {
+                    outputStream.writeUTF("Changed directory to: " + serverDirectory);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            } else {
+                System.out.println("Invalid directory: " + newDirPath);
+                try {
+                    outputStream.writeUTF("Invalid directory: " + newDirPath);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         }
     }

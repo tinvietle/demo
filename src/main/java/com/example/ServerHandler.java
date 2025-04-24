@@ -104,6 +104,13 @@ public class ServerHandler implements Runnable {
                         System.out.println("Client disconnected");
                         socket.close();
                         return;
+                    case "cd":
+                        if (parts.length >= 2){
+                            String directory = parts[1];
+                            ftp.changeDirectory(directory);
+                        } else {
+                            output.writeUTF("Usage: cd <directory>");
+                        }
                     default:
                         System.out.println("Unknown command");
                 }
