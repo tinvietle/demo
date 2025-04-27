@@ -40,11 +40,16 @@
       <type>pom</type>
       <scope>import</scope>
     </dependency>
+      <dependency>
+      <groupId>com.amazonaws</groupId>
+      <artifactId>aws-java-sdk</artifactId>
+      <version>1.11.1000</version>
+    </dependency>
     <dependency>
-    <groupId>com.amazonaws</groupId>
-    <artifactId>aws-java-sdk</artifactId>
-    <version>1.11.1000</version>
-  </dependency>
+      <groupId>org.mongodb</groupId>
+      <artifactId>mongodb-driver-sync</artifactId>
+      <version>5.4.0</version>
+    </dependency>
   </dependencies>
   <build>
     <plugins>

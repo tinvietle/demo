@@ -1,0 +1,297 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FTPFunctions.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">demo</a> &gt; <a href="index.source.html" class="el_package">com.example</a> &gt; <span class="el_source">FTPFunctions.java</span></div><h1>FTPFunctions.java</h1><pre class="source lang-java linenums">package com.example;
+
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.net.Socket;
+
+public class FTPFunctions {
+    Socket socket;
+    DataOutputStream outputStream;
+    DataInputStream inputStream;
+    String defaultDirectory;
+    String serverDirectory;
+
+<span class="nc" id="L17">    public FTPFunctions(Socket socket, String serverDirectory) {</span>
+<span class="nc" id="L18">        this.socket = socket;</span>
+<span class="nc" id="L19">        this.serverDirectory = serverDirectory;</span>
+<span class="nc" id="L20">        this.defaultDirectory = serverDirectory;</span>
+        try {
+<span class="nc" id="L22">            this.outputStream = new DataOutputStream(socket.getOutputStream());</span>
+<span class="nc" id="L23">            this.inputStream = new DataInputStream(socket.getInputStream());</span>
+<span class="nc" id="L24">        } catch (Exception e) {</span>
+<span class="nc" id="L25">            System.out.println(&quot;Error initializing output stream: &quot; + e.getMessage());</span>
+<span class="nc" id="L26">        }</span>
+<span class="nc" id="L27">    }</span>
+
+    private String statusMessage(int statusCode) {
+<span class="nc" id="L30">        String message = &quot;&quot;;</span>
+<span class="nc bnc" id="L31" title="All 5 branches missed.">        switch (statusCode) {</span>
+            case 200:
+<span class="nc" id="L33">                message = &quot;OK&quot;;</span>
+<span class="nc" id="L34">                break;</span>
+            case 400:
+<span class="nc" id="L36">                message = &quot;Bad Request&quot;;</span>
+<span class="nc" id="L37">                break;</span>
+            case 404:
+<span class="nc" id="L39">                message = &quot;Not Found&quot;;</span>
+<span class="nc" id="L40">                break;</span>
+            case 500:
+<span class="nc" id="L42">                message = &quot;Internal Server Error&quot;;</span>
+<span class="nc" id="L43">                break;</span>
+            default:
+<span class="nc" id="L45">                message = &quot;Unknown Status Code&quot;;</span>
+        }
+<span class="nc" id="L47">        return message;</span>
+    }
+
+    public void sendFile(String filePath) {
+<span class="nc" id="L51">        System.out.println(&quot;Sending file...&quot;);</span>
+        try {
+<span class="nc" id="L53">            File file = new File(filePath);</span>
+<span class="nc bnc" id="L54" title="All 2 branches missed.">            if (file.exists()) {</span>
+                // Trigger Client to receive File instead of normal text
+<span class="nc" id="L56">                outputStream.writeUTF(&quot;put&quot;);</span>
+                // Send file name and size
+<span class="nc" id="L58">                outputStream.writeUTF(file.getName());</span>
+<span class="nc" id="L59">                outputStream.writeLong(file.length());</span>
+                // Send file data
+<span class="nc" id="L61">                byte[] buffer = new byte[4096];</span>
+                int bytesRead;
+<span class="nc" id="L63">                try (java.io.FileInputStream fis = new java.io.FileInputStream(file)) {</span>
+<span class="nc bnc" id="L64" title="All 2 branches missed.">                    while ((bytesRead = fis.read(buffer)) != -1) {</span>
+<span class="nc" id="L65">                        outputStream.write(buffer, 0, bytesRead);</span>
+                    }
+                }
+            }
+<span class="nc" id="L69">        } catch (IOException e) {</span>
+<span class="nc" id="L70">            e.printStackTrace();</span>
+<span class="nc" id="L71">        }</span>
+<span class="nc" id="L72">    }</span>
+
+    public void listFiles() {
+        // List files and folders in current directory
+<span class="nc" id="L76">        System.out.println(&quot;Listing files...&quot;);</span>
+        try {
+<span class="nc" id="L78">            System.out.println(&quot;Server Directory: &quot; + serverDirectory);</span>
+<span class="nc" id="L79">            File directory = new File(serverDirectory);</span>
+<span class="nc" id="L80">            String[] files = directory.list();</span>
+<span class="nc bnc" id="L81" title="All 2 branches missed.">            if (files != null) {</span>
+<span class="nc" id="L82">                String statusMessage = statusMessage(200);</span>
+<span class="nc" id="L83">                outputStream.writeUTF(statusMessage);</span>
+<span class="nc bnc" id="L84" title="All 2 branches missed.">                for (String file : files) {</span>
+<span class="nc" id="L85">                    System.out.println(file);</span>
+<span class="nc" id="L86">                    outputStream.writeUTF(file);</span>
+                }
+<span class="nc" id="L88">            } else {</span>
+<span class="nc" id="L89">                String statusMessage = statusMessage(404);</span>
+<span class="nc" id="L90">                outputStream.writeUTF(statusMessage);</span>
+<span class="nc" id="L91">                System.out.println(&quot;No files found in the directory.&quot;);</span>
+            }
+<span class="nc" id="L93">        } catch (IOException e) {</span>
+            // TODO Auto-generated catch block
+<span class="nc" id="L95">            e.printStackTrace();</span>
+<span class="nc" id="L96">        }</span>
+<span class="nc" id="L97">    }</span>
+
+    public void deleteFile(String filePath) {
+<span class="nc" id="L100">        System.out.println(&quot;Deleting file...&quot;);</span>
+        try {
+<span class="nc" id="L102">            File file = new File(filePath);</span>
+<span class="nc bnc" id="L103" title="All 2 branches missed.">            if (file.delete()) {</span>
+<span class="nc" id="L104">                System.out.println(&quot;File deleted successfully&quot;);</span>
+<span class="nc" id="L105">                outputStream.writeUTF(&quot;File deleted successfully&quot;);</span>
+            } else {
+<span class="nc" id="L107">                System.out.println(&quot;Failed to delete file&quot;);</span>
+<span class="nc" id="L108">                outputStream.writeUTF(&quot;File deleted successfully&quot;);</span>
+            }
+            
+<span class="nc" id="L111">        } catch (IOException e) {</span>
+            // TODO Auto-generated catch block
+<span class="nc" id="L113">            e.printStackTrace();</span>
+<span class="nc" id="L114">        }</span>
+<span class="nc" id="L115">    }</span>
+
+    public void renameFile(String dir, String oldName, String newName) {
+<span class="nc" id="L118">        System.out.println(&quot;Renaming file...&quot;);</span>
+        try {
+<span class="nc" id="L120">            String oldFilePath = dir + &quot;/&quot; + oldName;</span>
+<span class="nc" id="L121">            String newFilePath = dir + &quot;/&quot; + newName;</span>
+<span class="nc" id="L122">            File oldFile = new File(oldFilePath);</span>
+<span class="nc" id="L123">            File newFile = new File(newFilePath);</span>
+<span class="nc bnc" id="L124" title="All 2 branches missed.">            if (oldFile.renameTo(newFile)) {</span>
+<span class="nc" id="L125">                System.out.println(&quot;File renamed successfully&quot;);</span>
+<span class="nc" id="L126">                outputStream.writeUTF(&quot;File renamed successfully&quot;);</span>
+            } else {
+<span class="nc" id="L128">                System.out.println(&quot;Failed to rename file&quot;);</span>
+<span class="nc" id="L129">                outputStream.writeUTF(&quot;Failed to rename file&quot;);</span>
+            }
+            
+<span class="nc" id="L132">        } catch (IOException e) {</span>
+<span class="nc" id="L133">            e.printStackTrace();</span>
+<span class="nc" id="L134">        }</span>
+<span class="nc" id="L135">    }</span>
+
+    // Modified createDirectory to accept the directory name as a parameter
+    public void createDirectory(String dirName) {
+<span class="nc" id="L139">        File newDir = new File(serverDirectory, dirName);</span>
+<span class="nc bnc" id="L140" title="All 2 branches missed.">        if (!newDir.exists()) {</span>
+<span class="nc bnc" id="L141" title="All 2 branches missed.">            if (newDir.mkdir()) {</span>
+<span class="nc" id="L142">                try { outputStream.writeUTF(&quot;Directory created successfully: &quot; + dirName); }</span>
+<span class="nc" id="L143">                catch (IOException e) { e.printStackTrace(); }</span>
+            } else {
+<span class="nc" id="L145">                try { outputStream.writeUTF(&quot;Failed to create directory: &quot; + dirName); }</span>
+<span class="nc" id="L146">                catch (IOException e) { e.printStackTrace(); }</span>
+            }
+        } else {
+<span class="nc" id="L149">            try { outputStream.writeUTF(&quot;Directory already exists: &quot; + dirName); }</span>
+<span class="nc" id="L150">            catch (IOException e) { e.printStackTrace(); }</span>
+        }
+<span class="nc" id="L152">    }</span>
+
+    // Modified deleteDirectory to accept the directory name as a parameter
+    public void deleteDirectory(String dirName) {
+<span class="nc" id="L156">        File dir = new File(serverDirectory, dirName);</span>
+        try {
+<span class="nc bnc" id="L158" title="All 4 branches missed.">            if (dir.exists() &amp;&amp; dir.isDirectory()) {</span>
+<span class="nc" id="L159">                deleteDirectoryRecursively(dir);</span>
+<span class="nc" id="L160">                outputStream.writeUTF(&quot;Directory deleted successfully: &quot; + dirName);</span>
+            } else {
+<span class="nc" id="L162">                outputStream.writeUTF(&quot;Directory does not exist or is not a directory: &quot; + dirName);</span>
+            }
+<span class="nc" id="L164">        } catch(IOException e) {</span>
+<span class="nc" id="L165">            e.printStackTrace();</span>
+<span class="nc" id="L166">            try { outputStream.writeUTF(&quot;Error deleting directory: &quot; + e.getMessage()); }</span>
+<span class="nc" id="L167">            catch(IOException ex) { ex.printStackTrace(); }</span>
+<span class="nc" id="L168">        }</span>
+<span class="nc" id="L169">    }</span>
+    
+    // Helper method to delete a directory recursively
+    private void deleteDirectoryRecursively(File dir) {
+<span class="nc" id="L173">        File[] contents = dir.listFiles();</span>
+<span class="nc bnc" id="L174" title="All 2 branches missed.">        if (contents != null) {</span>
+<span class="nc bnc" id="L175" title="All 2 branches missed.">            for (File file : contents) {</span>
+<span class="nc bnc" id="L176" title="All 2 branches missed.">                if (file.isDirectory()) {</span>
+<span class="nc" id="L177">                    deleteDirectoryRecursively(file);</span>
+                } else {
+<span class="nc" id="L179">                    file.delete();</span>
+                }
+            }
+        }
+<span class="nc" id="L183">        dir.delete();</span>
+<span class="nc" id="L184">    }</span>
+    
+    // Modified moveFile to accept source and destination names as parameters
+    public void moveFile(String sourceName, String destinationName) {
+<span class="nc" id="L188">        File sourceFile = new File(serverDirectory, sourceName);</span>
+<span class="nc" id="L189">        File destFile = new File(serverDirectory, destinationName);</span>
+        try {
+<span class="nc bnc" id="L191" title="All 2 branches missed.">            if(sourceFile.exists()){</span>
+<span class="nc bnc" id="L192" title="All 2 branches missed.">                if(sourceFile.renameTo(destFile)){</span>
+<span class="nc" id="L193">                    outputStream.writeUTF(&quot;File moved successfully from &quot; + sourceName + &quot; to &quot; + destinationName);</span>
+                } else {
+<span class="nc" id="L195">                    outputStream.writeUTF(&quot;Failed to move file from &quot; + sourceName + &quot; to &quot; + destinationName);</span>
+                }
+            } else {
+<span class="nc" id="L198">                outputStream.writeUTF(&quot;Source file does not exist: &quot; + sourceName);</span>
+            }
+<span class="nc" id="L200">        } catch(IOException e) {</span>
+<span class="nc" id="L201">            e.printStackTrace();</span>
+<span class="nc" id="L202">            try { outputStream.writeUTF(&quot;Error moving file: &quot; + e.getMessage()); }</span>
+<span class="nc" id="L203">            catch(IOException ex) { ex.printStackTrace(); }</span>
+<span class="nc" id="L204">        }</span>
+<span class="nc" id="L205">    }</span>
+    
+    // Added method: printWorkingDirectory
+    public void printWorkingDirectory() {
+        try {
+<span class="nc" id="L210">            outputStream.writeUTF(&quot;Server working directory: &quot; + serverDirectory);</span>
+<span class="nc" id="L211">        } catch(IOException e) {</span>
+<span class="nc" id="L212">            e.printStackTrace();</span>
+<span class="nc" id="L213">        }</span>
+<span class="nc" id="L214">    }</span>
+    
+    public void receiveFile() {
+        try {
+            // Read file name and size
+<span class="nc" id="L219">            String fileName = inputStream.readUTF();</span>
+<span class="nc" id="L220">            long fileSize = inputStream.readLong();</span>
+
+            // Create output file in the server directory
+<span class="nc" id="L223">            File outputFile = new File(serverDirectory, fileName);</span>
+<span class="nc" id="L224">            try (FileOutputStream fos = new FileOutputStream(outputFile)) {</span>
+<span class="nc" id="L225">                byte[] buffer = new byte[4096];</span>
+                int bytesRead;
+<span class="nc" id="L227">                long remaining = fileSize;</span>
+
+<span class="nc bnc" id="L229" title="All 2 branches missed.">                while (remaining &gt; 0 &amp;&amp;</span>
+<span class="nc bnc" id="L230" title="All 2 branches missed.">                        (bytesRead = inputStream.read(buffer, 0, (int) Math.min(buffer.length, remaining))) != -1) {</span>
+<span class="nc" id="L231">                    fos.write(buffer, 0, bytesRead);</span>
+<span class="nc" id="L232">                    remaining -= bytesRead;</span>
+                }
+            }
+
+            // Send confirmation to client
+<span class="nc" id="L237">            outputStream.writeUTF(&quot;File upload successful: &quot; + fileName);</span>
+<span class="nc" id="L238">            System.out.println(&quot;Received file: &quot; + fileName);</span>
+
+<span class="nc" id="L240">        } catch (IOException e) {</span>
+<span class="nc" id="L241">            e.printStackTrace();</span>
+            try {
+<span class="nc" id="L243">                try (DataOutputStream dos = new DataOutputStream(socket.getOutputStream())) {</span>
+<span class="nc" id="L244">                    dos.writeUTF(&quot;File upload failed.&quot;);</span>
+                }
+<span class="nc" id="L246">            } catch (IOException ignored) {</span>
+<span class="nc" id="L247">            }</span>
+<span class="nc" id="L248">        }</span>
+<span class="nc" id="L249">    }</span>
+
+    public void changeDirectory(String newDirectory){
+        // Case ..
+        // Check if the new directory is out of bound of the default directory
+<span class="nc bnc" id="L254" title="All 2 branches missed.">        if (newDirectory.equals(&quot;..&quot;)) {</span>
+            // Check for the length of the server directory
+<span class="nc bnc" id="L256" title="All 2 branches missed.">            if (serverDirectory.length() &gt; defaultDirectory.length()){</span>
+                // Get the parent directory by trimming the last part of the path
+<span class="nc" id="L258">                serverDirectory = serverDirectory.substring(0, serverDirectory.lastIndexOf(File.separator));</span>
+<span class="nc" id="L259">                System.out.println(&quot;Changed directory to: &quot; + serverDirectory);</span>
+                try {
+<span class="nc" id="L261">                    outputStream.writeUTF(&quot;Changed directory to: &quot; + serverDirectory);</span>
+<span class="nc" id="L262">                } catch (IOException e) {</span>
+<span class="nc" id="L263">                    e.printStackTrace();</span>
+<span class="nc" id="L264">                }</span>
+            } else {
+<span class="nc" id="L266">                System.out.println(&quot;Already in the root directory: &quot; + serverDirectory);</span>
+                try {
+<span class="nc" id="L268">                    outputStream.writeUTF(&quot;Already in the root directory: &quot; + serverDirectory);</span>
+<span class="nc" id="L269">                } catch (IOException e) {</span>
+<span class="nc" id="L270">                    e.printStackTrace();</span>
+<span class="nc" id="L271">                }</span>
+            }
+        } else {
+            // Check if the new directory is a valid directory
+<span class="nc" id="L275">            String newDirPath = serverDirectory + File.separator + newDirectory;</span>
+<span class="nc" id="L276">            File newDir = new File(newDirPath);</span>
+<span class="nc bnc" id="L277" title="All 4 branches missed.">            if (newDir.exists() &amp;&amp; newDir.isDirectory()) {</span>
+<span class="nc" id="L278">                serverDirectory = newDirPath;</span>
+<span class="nc" id="L279">                System.out.println(&quot;Changed directory to: &quot; + serverDirectory);</span>
+                try {
+<span class="nc" id="L281">                    outputStream.writeUTF(&quot;Changed directory to: &quot; + serverDirectory);</span>
+<span class="nc" id="L282">                } catch (IOException e) {</span>
+<span class="nc" id="L283">                    e.printStackTrace();</span>
+<span class="nc" id="L284">                }</span>
+            } else {
+<span class="nc" id="L286">                System.out.println(&quot;Invalid directory: &quot; + newDirPath);</span>
+                try {
+<span class="nc" id="L288">                    outputStream.writeUTF(&quot;Invalid directory: &quot; + newDirPath);</span>
+<span class="nc" id="L289">                } catch (IOException e) {</span>
+<span class="nc" id="L290">                    e.printStackTrace();</span>
+<span class="nc" id="L291">                }</span>
+            }
+        }
+<span class="nc" id="L294">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

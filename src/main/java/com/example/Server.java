@@ -9,8 +9,8 @@ import java.util.concurrent.Executors;
 /**
  * Hello world!
  */
-public final class App {
-    private App() {
+public final class Server {
+    private Server() {
     }
 
     /**
@@ -25,7 +25,7 @@ public final class App {
             ServerSocket socket = new ServerSocket(1234); 
             while (true) { 
                 final Socket connection = socket.accept(); 
-                ServerHandler each_client = new ServerHandler(connection, "tin");
+                ServerHandler each_client = new ServerHandler(connection);
                 exec.execute(each_client); 
             }
         } catch (IOException e) {

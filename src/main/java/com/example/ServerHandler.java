@@ -5,36 +5,71 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 
+import org.bson.Document;
+
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.Filters;
+
 public class ServerHandler implements Runnable {
+    private static final MongoClient mongoClient;
+    private static final MongoDatabase database;
+    private static final MongoCollection<Document> usersColl;
+
+    static {
+        // 2. Initialize MongoDB client, database, and collection
+        String uri = "mongodb+srv://10422050:10422050@tam.kp7bhlj.mongodb.net/";
+        mongoClient = MongoClients.create(uri);                             // :contentReference[oaicite:9]{index=9}
+        database    = mongoClient.getDatabase("TAM");                       // :contentReference[oaicite:10]{index=10}
+        usersColl   = database.getCollection("users");
+    }
+
     private Socket socket;
     private DataInputStream input;
     private DataOutputStream output;
     private String username;
     private String serverDirectory;
-    
 
-    public ServerHandler(Socket socket, String clientName) {
+    public ServerHandler(Socket socket) {
         this.socket = socket;
         try {
             input = new DataInputStream(socket.getInputStream());
             output = new DataOutputStream(socket.getOutputStream());
-            username = clientName;
-            serverDirectory = "src/main/java/com/example/storage" + "/" + username;
-            helloClient();
-            
+            username = helloClient();
+            if (username == null) return;
+            serverDirectory = "src/main/java/com/example/storage/" + username;
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    private void helloClient() {
-        try {
-            output.writeUTF("Hello Client");
-            output.writeUTF("Welcome to the FTP server");
-            output.writeUTF("Please enter a command: ");
-        } catch (IOException e) {
-            e.printStackTrace();
+    private String helloClient() throws IOException {
+        output.writeUTF("Enter username:");
+        String user = input.readUTF();
+        output.writeUTF("Enter password:");
+        String pass = input.readUTF();
+
+        if (!authenticate(user, pass)) {
+            output.writeUTF("Invalid credentials. Closing connection.");
+            socket.close();
+            return null;
         }
+
+        output.writeUTF("Authentication successful");
+        output.writeUTF("Hello Client");
+        output.writeUTF("Welcome to the FTP server");
+        output.writeUTF("Please enter a command: ");
+        return user;
+    }
+
+    // 6. New helper method querying MongoDB
+    private boolean authenticate(String user, String pass) {
+        Document userDoc = usersColl.find(Filters.eq("username", user)).first();  // :contentReference[oaicite:11]{index=11}
+        if (userDoc == null) return false;
+        String storedPass = userDoc.getString("password");
+        return storedPass.equals(pass);  // replace with secure hash comparison later :contentReference[oaicite:12]{index=12}
     }
 
     @Override
