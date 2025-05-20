@@ -174,13 +174,13 @@ public class ServerHandler implements Runnable {
                             ftp.receiveFile();
                             break;
                         case "get":
-                            if(parts.length < 2){
+                            if (parts.length < 2) {
                                 output.writeUTF("Usage: get <filename>");
                             } else {
                                 try {
                                     String filename = parts[1];
-                                    String filePath = serverDirectory + "/" + filename;
-                                    ftp.sendFile(filePath);
+                                    // Directly pass the filename since FTPFunctions.sendFile already incorporates serverDirectory.
+                                    ftp.sendFile(filename);
                                 } catch(Exception e){
                                     output.writeUTF("Error executing get: " + e.getMessage());
                                 }
