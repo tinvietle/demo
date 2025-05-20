@@ -19,7 +19,11 @@ public class ClientReceiving implements Runnable {
             while (true) {
 
                 String tam = nhan.readUTF();
-                System.out.println(tam);
+                if (tam.equals("ftp> ")) {
+                    System.out.print("ftp> ");
+                } else {
+                    System.out.println(tam);
+                }
                 if(tam.equals("221 Service closing control connection")){
                     break;
                 }

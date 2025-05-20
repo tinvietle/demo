@@ -174,7 +174,7 @@ public class ServerHandler implements Runnable {
                             ftp.receiveFile();
                             break;
                         case "get":
-                            if (parts.length < 2) {
+                            if (parts.length != 2) {
                                 output.writeUTF("Usage: get <filename>");
                             } else {
                                 try {
@@ -190,20 +190,19 @@ public class ServerHandler implements Runnable {
                             ftp.listFiles();
                             break;
                         case "delete":
-                            if(parts.length < 2){
+                            if(parts.length != 2){
                                 output.writeUTF("Usage: delete <filename>");
                             } else {
                                 try {
                                     String fileToDelete = parts[1];
-                                    String filePathToDelete = serverDirectory + "/" + fileToDelete;
-                                    ftp.deleteFile(filePathToDelete);
+                                    ftp.deleteFile(fileToDelete);
                                 } catch(Exception e){
                                     output.writeUTF("Error executing delete: " + e.getMessage());
                                 }
                             }
                             break;
                         case "rename":
-                            if(parts.length < 3){
+                            if(parts.length != 3){
                                 output.writeUTF("Usage: rename <oldName> <newName>");
                             } else {
                                 try {
@@ -216,7 +215,7 @@ public class ServerHandler implements Runnable {
                             }
                             break;
                         case "mkdir":
-                            if(parts.length < 2){
+                            if(parts.length != 2){
                                 output.writeUTF("Usage: mkdir <directoryName>");
                             } else {
                                 try {
@@ -227,7 +226,7 @@ public class ServerHandler implements Runnable {
                             }
                             break;
                         case "rmdir":
-                            if(parts.length < 2){
+                            if(parts.length != 2){
                                 output.writeUTF("Usage: rmdir <directoryName>");
                             } else {
                                 try {
@@ -238,7 +237,7 @@ public class ServerHandler implements Runnable {
                             }
                             break;
                         case "move":
-                            if(parts.length < 3){
+                            if(parts.length != 3){
                                 output.writeUTF("Usage: move <source> <destination>");
                             } else {
                                 try {
@@ -260,7 +259,7 @@ public class ServerHandler implements Runnable {
                             socket.close();
                             return;
                         case "cd":
-                            if(parts.length < 2){
+                            if(parts.length != 2){
                                 output.writeUTF("Usage: cd <directory>");
                             } else {
                                 try {
