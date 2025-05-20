@@ -25,7 +25,10 @@ public class ClientSending implements Runnable{
                 if (tam2.equals("put")){
                     clientHandler.openFileChoser();
                 }
-
+                // exit the loop on "quit"
+                if(tam2.equals("quit")){
+                    break;
+                }
             }
         } catch (IOException ex) {
 

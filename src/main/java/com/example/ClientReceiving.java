@@ -20,6 +20,9 @@ public class ClientReceiving implements Runnable {
 
                 String tam = nhan.readUTF();
                 System.out.println(tam);
+                if(tam.equals("221 Service closing control connection")){
+                    break;
+                }
                 if (tam.equals("put")){
                     clientHandler.receiveFile();
                 }
