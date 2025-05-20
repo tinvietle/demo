@@ -13,11 +13,13 @@ public class FTPFunctions {
     DataInputStream inputStream;
     String defaultDirectory;
     String serverDirectory;
+    String baseDirectory; // new field to store the original user directory
 
     public FTPFunctions(Socket socket, String serverDirectory) {
         this.socket = socket;
         this.serverDirectory = serverDirectory;
         this.defaultDirectory = serverDirectory;
+        this.baseDirectory = serverDirectory; // store the user's home
         try {
             this.outputStream = new DataOutputStream(socket.getOutputStream());
             this.inputStream = new DataInputStream(socket.getInputStream());
@@ -26,6 +28,7 @@ public class FTPFunctions {
         }
     }
 
+    /* ----------------- Status Codes ----------------- */
     public static class FTPStatus {
         public static final int COMMAND_OK = 200;
         public static final int SERVICE_READY = 220;
@@ -67,6 +70,7 @@ public class FTPFunctions {
         }
     }
 
+    /* ----------------- Utility Methods ----------------- */
     // Helper method to validate if a path is within the allowed directory space
     private boolean isPathWithinAllowedDirectory(String path) {
         try {
@@ -79,6 +83,7 @@ public class FTPFunctions {
         }
     }
 
+    /* ----------------- File Operations ----------------- */
     public void sendFile(String filePath) {
         System.out.println("Sending file...");
         try {
@@ -110,187 +115,6 @@ public class FTPFunctions {
         }
     }
 
-    public void listFiles() {
-        // List files and folders in current directory
-        System.out.println("Listing files...");
-        try {
-            System.out.println("Server Directory: " + serverDirectory);
-            File directory = new File(serverDirectory);
-            
-            // Verify the directory is within the allowed space
-            File canonicalDir = directory.getCanonicalFile();
-            File canonicalBase = new File(defaultDirectory).getCanonicalFile();
-            if (!canonicalDir.getPath().startsWith(canonicalBase.getPath())) {
-                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE) + ": Access denied");
-                return;
-            }
-            
-            String[] files = directory.list();
-            if (files != null) {
-                String statusMessage = FTPStatus.message(FTPStatus.COMMAND_OK);
-                outputStream.writeUTF(statusMessage);
-                for (String file : files) {
-                    System.out.println(file);
-                    outputStream.writeUTF(file);
-                }
-            } else {
-                String statusMessage = FTPStatus.message(404);
-                outputStream.writeUTF(statusMessage);
-                System.out.println("No files found in the directory.");
-            }
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-    }
-
-    public void deleteFile(String filePath) {
-        System.out.println("Deleting file...");
-        try {
-            if (!isPathWithinAllowedDirectory(filePath)) {
-                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE) + ": Access denied - cannot delete files outside allowed space");
-                return;
-            }
-            
-            File file = new File(serverDirectory, filePath);
-            if (file.delete()) {
-                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_ACTION_OK));
-            } else {
-                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE));
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void renameFile(String dir, String oldName, String newName) {
-        System.out.println("Renaming file...");
-        try {
-            // Check if paths are within allowed directory
-            if (!isPathWithinAllowedDirectory(oldName) || !isPathWithinAllowedDirectory(newName)) {
-                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE) + ": Access denied - cannot rename files outside allowed space");
-                return;
-            }
-            
-            File oldFile = new File(serverDirectory, oldName);
-            File newFile = new File(serverDirectory, newName);
-            
-            // Check if newFile's parent directory exists (handles '../' attacks)
-            if (!newFile.getParentFile().exists() || !oldFile.getParentFile().exists()) {
-                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE) + ": Invalid directory path");
-                return;
-            }
-            
-            if (oldFile.exists() && oldFile.renameTo(newFile)) {
-                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_ACTION_OK));
-            } else {
-                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE) + ": File not found or cannot be renamed");
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-            try {
-                outputStream.writeUTF("Error renaming file: " + e.getMessage());
-            } catch (IOException ex) {
-                ex.printStackTrace();
-            }
-        }
-    }
-
-    // Modified createDirectory to accept the directory name as a parameter
-    public void createDirectory(String dirName) {
-        try {
-            if (!isPathWithinAllowedDirectory(dirName)) {
-                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE) + ": Access denied - cannot create directories outside allowed space");
-                return;
-            }
-            
-            File newDir = new File(serverDirectory, dirName);
-            if (!newDir.exists()) {
-                if (newDir.mkdir()) {
-                    outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_ACTION_OK) + ": Directory created successfully: " + dirName);
-                } else {
-                    outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE) + ": Failed to create directory: " + dirName);
-                }
-            } else {
-                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE) + ": Directory already exists: " + dirName);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    // Modified deleteDirectory to accept the directory name as a parameter
-    public void deleteDirectory(String dirName) {
-        try {
-            if (!isPathWithinAllowedDirectory(dirName)) {
-                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE) + ": Access denied - cannot delete directories outside allowed space");
-                return;
-            }
-            
-            File dir = new File(serverDirectory, dirName);
-            if (dir.exists() && dir.isDirectory()) {
-                deleteDirectoryRecursively(dir);
-                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_ACTION_OK) + ": Directory deleted successfully: " + dirName);
-            } else {
-                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE) + ": Directory does not exist or is not a directory: " + dirName);
-            }
-        } catch(IOException e) {
-            e.printStackTrace();
-            try { outputStream.writeUTF("Error deleting directory: " + e.getMessage()); }
-            catch(IOException ex) { ex.printStackTrace(); }
-        }
-    }
-    
-    // Helper method to delete a directory recursively
-    private void deleteDirectoryRecursively(File dir) {
-        File[] contents = dir.listFiles();
-        if (contents != null) {
-            for (File file : contents) {
-                if (file.isDirectory()) {
-                    deleteDirectoryRecursively(file);
-                } else {
-                    file.delete();
-                }
-            }
-        }
-        dir.delete();
-    }
-    
-    // Modified moveFile to accept source and destination names as parameters
-    public void moveFile(String sourceName, String destinationName) {
-        try {
-            if (!isPathWithinAllowedDirectory(sourceName) || !isPathWithinAllowedDirectory(destinationName)) {
-                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE) + ": Access denied - cannot move files outside allowed space");
-                return;
-            }
-            
-            File sourceFile = new File(serverDirectory, sourceName);
-            File destFile = new File(serverDirectory, destinationName);
-            if(sourceFile.exists()){
-                if(sourceFile.renameTo(destFile)){
-                    outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_ACTION_OK));
-                } else {
-                    outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE));
-                }
-            } else {
-                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE) + ": Source file does not exist: " + sourceName);
-            }
-        } catch(IOException e) {
-            e.printStackTrace();
-            try { outputStream.writeUTF("Error moving file: " + e.getMessage()); }
-            catch(IOException ex) { ex.printStackTrace(); }
-        }
-    }
-    
-    // Added method: printWorkingDirectory
-    public void printWorkingDirectory() {
-        try {
-            outputStream.writeUTF("Server working directory: " + serverDirectory);
-        } catch(IOException e) {
-            e.printStackTrace();
-        }
-    }
-    
     public void receiveFile() {
         try {
             // Read file name and size
@@ -338,31 +162,175 @@ public class FTPFunctions {
             }
         }
     }
+    
+    public void moveFile(String sourceName, String destinationName) {
+        try {
+            if (!isPathWithinAllowedDirectory(sourceName) || !isPathWithinAllowedDirectory(destinationName)) {
+                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE) + ": Access denied - cannot move files outside allowed space");
+                return;
+            }
+            
+            File sourceFile = new File(serverDirectory, sourceName);
+            File destFile = new File(serverDirectory, destinationName);
+            if(sourceFile.exists()){
+                if(sourceFile.renameTo(destFile)){
+                    outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_ACTION_OK));
+                } else {
+                    outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE));
+                }
+            } else {
+                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE) + ": Source file does not exist: " + sourceName);
+            }
+        } catch(IOException e) {
+            e.printStackTrace();
+            try { outputStream.writeUTF("Error moving file: " + e.getMessage()); }
+            catch(IOException ex) { ex.printStackTrace(); }
+        }
+    }
+    
+    public void deleteFile(String filePath) {
+        System.out.println("Deleting file...");
+        try {
+            if (!isPathWithinAllowedDirectory(filePath)) {
+                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE) + ": Access denied - cannot delete files outside allowed space");
+                return;
+            }
+            
+            File file = new File(serverDirectory, filePath);
+            if (file.delete()) {
+                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_ACTION_OK));
+            } else {
+                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE));
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    
+    public void renameFile(String dir, String oldName, String newName) {
+        System.out.println("Renaming file...");
+        try {
+            // Check if paths are within allowed directory
+            if (!isPathWithinAllowedDirectory(oldName) || !isPathWithinAllowedDirectory(newName)) {
+                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE) + ": Access denied - cannot rename files outside allowed space");
+                return;
+            }
+            
+            File oldFile = new File(serverDirectory, oldName);
+            File newFile = new File(serverDirectory, newName);
+            
+            // Check if newFile's parent directory exists (handles '../' attacks)
+            // /* Validate Parent Directory Existence */
+            if (!newFile.getParentFile().exists() || !oldFile.getParentFile().exists()) {
+                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE) + ": Invalid directory path");
+                return;
+            }
+            
+            if (oldFile.exists() && oldFile.renameTo(newFile)) {
+                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_ACTION_OK));
+            } else {
+                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE) + ": File not found or cannot be renamed");
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            try {
+                outputStream.writeUTF("Error renaming file: " + e.getMessage());
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        }
+    }
+    
+    public void printWorkingDirectory() {
+        try {
+            String baseFolder = new File(baseDirectory).getName();
+            String relative = "";
+            if (serverDirectory.length() > baseDirectory.length()) {
+                relative = serverDirectory.substring(baseDirectory.length());
+            }
+            String display = baseFolder + "/" + (relative.startsWith(File.separator) ? relative.substring(1) : relative);
+            if (!display.endsWith("/")) display += "/";
+            outputStream.writeUTF("Server working directory: " + display);
+        } catch(IOException e) {
+            e.printStackTrace();
+        }
+    }
 
+    /* ----------------- Directory Operations ----------------- */
+    public void listFiles() {
+        // List files and folders in current directory
+        System.out.println("Listing files...");
+        try {
+            // Updated header: show listing based on the username directory only
+            int sepIndex = serverDirectory.lastIndexOf(File.separator);
+            String relativeDir = (sepIndex != -1) ? serverDirectory.substring(sepIndex + 1) : serverDirectory;
+            outputStream.writeUTF("Directory listing for: " + relativeDir + "/");
+            
+            File directory = new File(serverDirectory);
+            
+            // Verify the directory is within allowed space
+            File canonicalDir = directory.getCanonicalFile();
+            File canonicalBase = new File(defaultDirectory).getCanonicalFile();
+            if (!canonicalDir.getPath().startsWith(canonicalBase.getPath())) {
+                outputStream.writeUTF("Error: " + FTPStatus.message(FTPStatus.FILE_UNAVAILABLE) + ": Access denied");
+                return;
+            }
+            
+            String[] files = directory.list();
+            if (files != null) {
+                // ...existing code...
+                for (String file : files) {
+                    outputStream.writeUTF(file);
+                }
+            } else {
+                outputStream.writeUTF("No files found in the directory.");
+                System.out.println("No files found in the directory.");
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    
     public void changeDirectory(String newDirectory){
         try {
+            if(newDirectory == null || newDirectory.trim().isEmpty()){
+                outputStream.writeUTF("Usage: cd <directory>");
+                return;
+            }
             File baseDir = new File(defaultDirectory).getCanonicalFile();
             File targetDir;
             if ("..".equals(newDirectory)) {
                 targetDir = new File(serverDirectory).getParentFile();
-                if (targetDir == null) {
-                    outputStream.writeUTF("Already in the root directory: " + serverDirectory);
+                if (targetDir == null || targetDir.getCanonicalPath().equals(baseDir.getCanonicalPath())) {
+                    String baseFolder = new File(baseDirectory).getName();
+                    outputStream.writeUTF("Already in the root directory: " + baseFolder + "/");
                     return;
                 }
             } else {
                 targetDir = new File(serverDirectory, newDirectory);
             }
             targetDir = targetDir.getCanonicalFile();
-            // Verify the new directory is within the allowed base directory
             if (!targetDir.getPath().startsWith(baseDir.getPath())) {
                 outputStream.writeUTF("Access denied: Unable to change directory.");
                 return;
             }
             if (targetDir.exists() && targetDir.isDirectory()) {
                 serverDirectory = targetDir.getPath();
-                outputStream.writeUTF("Changed directory to: " + serverDirectory);
+                String baseFolder = new File(baseDirectory).getName();
+                String basePath = new File(baseDirectory).getCanonicalPath();
+                String currentPath = targetDir.getCanonicalPath();
+                String relative = currentPath.length() > basePath.length()
+                                ? currentPath.substring(basePath.length())
+                                : "";
+                if (relative.startsWith(File.separator)) {
+                    relative = relative.substring(1);
+                }
+                String display = baseFolder + "/" + relative;
+                if (!display.endsWith("/")) display += "/";
+                outputStream.writeUTF("Changed directory to: " + display);
             } else {
-                outputStream.writeUTF("Invalid directory: " + targetDir.getPath());
+                String baseFolder = new File(baseDirectory).getName();
+                outputStream.writeUTF("Invalid directory: " + baseFolder + "/");
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -371,5 +339,62 @@ public class FTPFunctions {
             } catch(IOException ex) { ex.printStackTrace(); }
         }
     }
-
+    
+    public void createDirectory(String dirName) {
+        try {
+            if (!isPathWithinAllowedDirectory(dirName)) {
+                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE) + ": Access denied - cannot create directories outside allowed space");
+                return;
+            }
+            
+            File newDir = new File(serverDirectory, dirName);
+            if (!newDir.exists()) {
+                if (newDir.mkdir()) {
+                    outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_ACTION_OK) + ": Directory created successfully: " + dirName);
+                } else {
+                    outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE) + ": Failed to create directory: " + dirName);
+                }
+            } else {
+                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE) + ": Directory already exists: " + dirName);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    
+    public void deleteDirectory(String dirName) {
+        try {
+            if (!isPathWithinAllowedDirectory(dirName)) {
+                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE) + ": Access denied - cannot delete directories outside allowed space");
+                return;
+            }
+            
+            File dir = new File(serverDirectory, dirName);
+            if (dir.exists() && dir.isDirectory()) {
+                deleteDirectoryRecursively(dir);
+                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_ACTION_OK) + ": Directory deleted successfully: " + dirName);
+            } else {
+                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE) + ": Directory does not exist or is not a directory: " + dirName);
+            }
+        } catch(IOException e) {
+            e.printStackTrace();
+            try { outputStream.writeUTF("Error deleting directory: " + e.getMessage()); }
+            catch(IOException ex) { ex.printStackTrace(); }
+        }
+    }
+    
+    // Helper method to delete a directory recursively
+    private void deleteDirectoryRecursively(File dir) {
+        File[] contents = dir.listFiles();
+        if (contents != null) {
+            for (File file : contents) {
+                if (file.isDirectory()) {
+                    deleteDirectoryRecursively(file);
+                } else {
+                    file.delete();
+                }
+            }
+        }
+        dir.delete();
+    }
 }
