@@ -35,6 +35,7 @@ public class ServerHandler implements Runnable {
     private DataOutputStream output;
     private String username;
     private String serverDirectory;
+    private AbstractFTPFunctions ftp;
 
     public ServerHandler(Socket socket) {
         this.socket = socket;
@@ -47,6 +48,13 @@ public class ServerHandler implements Runnable {
 
             // 3. Create directory for the user if it doesn't exist
             ensureUserDirectory(serverDirectory);
+
+            // 5. Initialize FTP functions based on user type
+            if (username.equalsIgnoreCase("public")) {
+                ftp = new AnonymousFTPFunctions(socket, serverDirectory);
+            } else {
+                ftp = new UserFTPFunctions(socket, serverDirectory);
+            }
             
         } catch (IOException e) {
             e.printStackTrace();
@@ -55,6 +63,11 @@ public class ServerHandler implements Runnable {
 
     private String helloClient() throws IOException {
         while (true) {
+            output.writeUTF("If you do not have a username for this system, you can log in using anonymous FTP.");
+            output.writeUTF("To do this, enter the word 'anonymous' as your username.");
+            output.writeUTF("When prompted for a password, enter your email address. This helps the server log anonymous access.");
+            output.writeUTF("Once logged in, you'll have access to the public anonymous directory, where you can download files.");
+            output.writeUTF("Note: You will not be able to upload, delete, or modify files on the remote server as an anonymous user.");
             output.writeUTF("Enter username:");
             String user = input.readUTF();
             output.writeUTF("Enter password:");
@@ -62,7 +75,7 @@ public class ServerHandler implements Runnable {
 
             // 4. Check if user is anonymous   
             if (user.equalsIgnoreCase("anonymous")) {
-                if (recordAnonymousUser(user, pass)) {
+                if (recordAnonymousUser(pass)) {
                     output.writeUTF("Logged in as anonymous user.");
                     return "public";
                 } else {
@@ -140,7 +153,7 @@ public class ServerHandler implements Runnable {
         }
     }
 
-    private boolean recordAnonymousUser(String user, String pass) {
+    private boolean recordAnonymousUser(String pass) {
         Document newAnonymousLogIn = new Document("email", pass)
                                             .append("timeOfLogIn", System.currentTimeMillis());
         try {
@@ -188,7 +201,6 @@ public class ServerHandler implements Runnable {
     public void run() {
         try {
             String message;
-            FTPFunctions ftp = new FTPFunctions(socket, serverDirectory);
             // Removed the initial prompt from helloClient; now sending prompt in each iteration
             while (true) {
                 if (socket.isClosed()) break;
@@ -217,12 +229,6 @@ public class ServerHandler implements Runnable {
                         String filePathToDelete = serverDirectory + "/" + fileToDelete;
                         ftp.deleteFile(filePathToDelete);
                         break;
-                    case "rename":
-                        // Get old and new file names from message
-                        String oldName = parts[1];
-                        String newName = parts[2];
-                        ftp.renameFile(serverDirectory, oldName, newName);
-                        break;
                     case "mkdir":
                         if(parts.length >= 2){
                             ftp.createDirectory(parts[1]);
@@ -248,7 +254,7 @@ public class ServerHandler implements Runnable {
                         ftp.printWorkingDirectory();
                         break;
                     case "help":
-                        output.writeUTF("Available commands: put, get, ls, delete, rename <oldName> <newName>, mkdir <dirName>, rmdir <dirName>, move <source> <destination>, pwd, help, quit");
+                        ftp.showHelp();
                         break;
                     case "quit":
                         output.writeUTF("221 Service closing control connection"); 
