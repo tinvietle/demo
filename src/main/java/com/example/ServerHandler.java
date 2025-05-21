@@ -19,6 +19,7 @@ public class ServerHandler implements Runnable {
     private static final MongoClient mongoClient;
     private static final MongoDatabase database;
     private static final MongoCollection<Document> usersColl;
+    private static final MongoCollection<Document> anonymColl;
 
     static {
         // 2. Initialize MongoDB client, database, and collection
@@ -26,6 +27,7 @@ public class ServerHandler implements Runnable {
         mongoClient = MongoClients.create(uri);                             // :contentReference[oaicite:9]{index=9}
         database    = mongoClient.getDatabase("TAM");                       // :contentReference[oaicite:10]{index=10}
         usersColl   = database.getCollection("users");
+        anonymColl   = database.getCollection("anonymous");
     }
 
     private Socket socket;
@@ -57,6 +59,21 @@ public class ServerHandler implements Runnable {
             String user = input.readUTF();
             output.writeUTF("Enter password:");
             String pass = input.readUTF();
+
+            // 4. Check if user is anonymous   
+            if (user.equalsIgnoreCase("anonymous")) {
+                if (recordAnonymousUser(user, pass)) {
+                    output.writeUTF("Logged in as anonymous user.");
+                    return "public";
+                } else {
+                    output.writeUTF("Error logging in as anonymous user. Please try again later.");
+                    try {
+                        socket.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
     
             if (authenticate(user, pass)) {
                 output.writeUTF("Authentication successful");
@@ -123,6 +140,18 @@ public class ServerHandler implements Runnable {
         }
     }
 
+    private boolean recordAnonymousUser(String user, String pass) {
+        Document newAnonymousLogIn = new Document("email", pass)
+                                            .append("timeOfLogIn", System.currentTimeMillis());
+        try {
+            anonymColl.insertOne(newAnonymousLogIn);                        // insertOne example :contentReference[oaicite:6]{index=6}
+            sendMessage("Anonymous user recorded successfully.");
+            return true;
+        } catch (MongoWriteException e) {
+            sendMessage("Error recording anonymous user: " + e.getMessage());
+            return false;
+        }
+    }
 
     private void ensureUserDirectory(String userDirPath) {
         File userDir = new File(userDirPath);
