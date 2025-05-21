@@ -189,9 +189,13 @@ public class ServerHandler implements Runnable {
         try {
             String message;
             FTPFunctions ftp = new FTPFunctions(socket, serverDirectory);
-            while ((message = input.readUTF()) != null) {
+            // Removed the initial prompt from helloClient; now sending prompt in each iteration
+            while (true) {
+                if (socket.isClosed()) break;
+                output.writeUTF("ftp> "); // Send prompt before reading command so prompt and command appear on one line
+                message = input.readUTF();
+                if (message == null) break;
                 System.out.println("Received: " + message);
-                // Split the message into command and arguments
                 String[] parts = message.split(" ");
                 message = parts[0];
                 switch (message) {
@@ -205,7 +209,6 @@ public class ServerHandler implements Runnable {
                         ftp.sendFile(filePath);
                         break;
                     case "ls":
-                        // Get current directory path
                         ftp.listFiles();
                         break;
                     case "delete":
@@ -248,6 +251,7 @@ public class ServerHandler implements Runnable {
                         output.writeUTF("Available commands: put, get, ls, delete, rename <oldName> <newName>, mkdir <dirName>, rmdir <dirName>, move <source> <destination>, pwd, help, quit");
                         break;
                     case "quit":
+                        output.writeUTF("221 Service closing control connection"); 
                         System.out.println("Client disconnected");
                         socket.close();
                         return;
@@ -258,6 +262,7 @@ public class ServerHandler implements Runnable {
                         } else {
                             output.writeUTF("Usage: cd <directory>");
                         }
+                        break;
                     default:
                         System.out.println("Unknown command");
                 }

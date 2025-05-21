@@ -22,6 +22,9 @@ public class Client {
             t2.start();
             
         }
-        catch(Exception e){}
+        catch(Exception e){
+            System.out.println("Connection error: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 }
