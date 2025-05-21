@@ -293,46 +293,6 @@ public class FTPFunctions {
         }
     }
 
-    public void renameFile(String dir, String oldName, String newName) {
-        System.out.println("Renaming file...");
-        try {
-            // Check if paths are within allowed directory
-            if (!isPathWithinAllowedDirectory(oldName) || !isPathWithinAllowedDirectory(newName)) {
-                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_ACTION_NOT_TAKEN)
-                        + ": Access denied - cannot rename files outside allowed space");
-                return;
-            }
-
-            File oldFile = new File(serverDirectory, oldName);
-            File newFile = new File(serverDirectory, newName);
-
-            // Check if newFile's parent directory exists (handles '../' attacks)
-            // /* Validate Parent Directory Existence */
-            if (!newFile.getParentFile().exists() || !oldFile.getParentFile().exists()) {
-                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE) + ": Invalid directory path");
-                return;
-            }
-
-            if (oldFile.exists() && oldFile.renameTo(newFile)) {
-                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_ACTION_OK));
-            } else {
-                if (!oldFile.exists()) {
-                    outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE) + ": File not found");
-                } else {
-                    outputStream.writeUTF(FTPStatus.message(FTPStatus.ACTION_ABORTED) + ": Cannot rename file");
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-            try {
-                outputStream.writeUTF(
-                        FTPStatus.message(FTPStatus.ACTION_ABORTED) + ": Error renaming file: " + e.getMessage());
-            } catch (IOException ex) {
-                ex.printStackTrace();
-            }
-        }
-    }
-
     public void printWorkingDirectory() {
         try {
             String baseFolder = new File(baseDirectory).getName();

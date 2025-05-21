@@ -206,19 +206,6 @@ public class ServerHandler implements Runnable {
                                 }
                             }
                             break;
-                        case "rename":
-                            if(parts.length != 3){
-                                output.writeUTF("Usage: rename <oldName> <newName>");
-                            } else {
-                                try {
-                                    String oldName = parts[1];
-                                    String newName = parts[2];
-                                    ftp.renameFile(serverDirectory, oldName, newName);
-                                } catch(Exception e){
-                                    output.writeUTF("Error executing rename: " + e.getMessage());
-                                }
-                            }
-                            break;
                         case "mkdir":
                             if(parts.length != 2){
                                 output.writeUTF("Usage: mkdir <directoryName>");
