@@ -241,7 +241,7 @@ public class ServerHandler implements Runnable {
                                 }
                             }
                             break;
-                        case "move":
+                        case "mv":
                             if(parts.length != 3){
                                 output.writeUTF("Usage: move <source> <destination>");
                             } else {
