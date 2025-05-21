@@ -118,7 +118,14 @@ public class FTPFunctions {
                 return;
             }
 
-            File file = new File(serverDirectory, filePath);
+            // Load file for absolute and relative path
+            File file;
+            if (new File(filePath).isAbsolute()) {
+                file = new File("src/main/java/com/example/storage/", filePath);
+            } else {
+                file = new File(serverDirectory, filePath);
+            }
+
             if (file.exists()) {
                 // Trigger Client to receive File instead of normal text
                 outputStream.writeUTF("put");
