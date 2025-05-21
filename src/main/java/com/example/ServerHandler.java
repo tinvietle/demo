@@ -171,7 +171,12 @@ public class ServerHandler implements Runnable {
                 try {
                     switch (command) {
                         case "put":
-                            ftp.receiveFile();
+                            // Check if user is guest
+                            boolean isGuest = false;
+                            if (username.equals("guest")) {
+                                isGuest = true;
+                            }
+                            ftp.receiveFile(isGuest);
                             break;
                         case "get":
                             if (parts.length != 2) {

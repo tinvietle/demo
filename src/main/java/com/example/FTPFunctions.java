@@ -123,11 +123,19 @@ public class FTPFunctions {
         }
     }
 
-    public void receiveFile() {
+    public void receiveFile(boolean isGuest) {
         try {
             // Read file name and size
             String fileName = inputStream.readUTF();
             long fileSize = inputStream.readLong();
+            final long MAX_FILE_SIZE = 1024 * 1024 * 10; // 10 MB limit
+
+            // Check if user is guest and limit file size
+            if (isGuest && fileSize > MAX_FILE_SIZE) { // 1 MB limit for guest users
+                outputStream.writeUTF(FTPStatus.message(FTPStatus.INSUFFICIENT_STORAGE)
+                    + ": File upload failed - size exceeds limit for guest users");
+                return;
+            }
 
             // Security check for path traversal
             if (fileName.contains("..") || !isPathWithinAllowedDirectory(fileName)) {
