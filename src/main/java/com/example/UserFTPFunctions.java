@@ -12,8 +12,11 @@ public class UserFTPFunctions extends AbstractFTPFunctions {
     }
 
     @Override
-        public void receiveFile() {
+    public void receiveFile(String[] parts) {
         try {
+            if (parts.length != 1) {
+                outputStream.writeUTF(FTPStatus.message(FTPStatus.SYNTAX_ERROR) + "Usage: put");
+            }
             outputStream.writeUTF("put allowed");
             // Read file name and size
             String fileName = inputStream.readUTF();
@@ -75,7 +78,16 @@ public class UserFTPFunctions extends AbstractFTPFunctions {
     }
 
     @Override
-    public void deleteFile(String dirName) {
+    public void deleteFile(String[] parts) {
+        if (parts.length != 2) {
+            try {
+                outputStream.writeUTF(FTPStatus.message(FTPStatus.SYNTAX_ERROR) + "Usage: delete <filename>");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return;
+        }
+        String dirName = parts[1];
         try {
             if (!isPathWithinAllowedDirectory(dirName)) {
                 outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_ACTION_NOT_TAKEN)
@@ -105,7 +117,16 @@ public class UserFTPFunctions extends AbstractFTPFunctions {
 
     @Override
     // Modified createDirectory to accept the directory name as a parameter
-    public void createDirectory(String dirName) {
+    public void createDirectory(String[] parts) {
+        if (parts.length != 2) {
+            try {
+                outputStream.writeUTF(FTPStatus.message(FTPStatus.SYNTAX_ERROR) + "Usage: mkdir <dirname>");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return;
+        }
+        String dirName = parts[1];
         try {
             if (!isPathWithinAllowedDirectory(dirName)) {
                 outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_ACTION_NOT_TAKEN)
@@ -139,7 +160,16 @@ public class UserFTPFunctions extends AbstractFTPFunctions {
 
     @Override
     // Modified deleteDirectory to accept the directory name as a parameter
-    public void deleteDirectory(String dirName) {
+    public void deleteDirectory(String[] parts) {
+        if (parts.length != 2) {
+            try {
+                outputStream.writeUTF(FTPStatus.message(FTPStatus.SYNTAX_ERROR) + "Usage: rmdir <dirname>");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return;
+        }
+        String dirName = parts[1];
         try {
             if (!isPathWithinAllowedDirectory(dirName)) {
                 outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_ACTION_NOT_TAKEN)
@@ -166,7 +196,7 @@ public class UserFTPFunctions extends AbstractFTPFunctions {
             }
         }
     }
-    
+
     // Helper method to delete a directory recursively
     private void deleteDirectoryRecursively(File dir) {
         File[] contents = dir.listFiles();
@@ -181,10 +211,20 @@ public class UserFTPFunctions extends AbstractFTPFunctions {
         }
         dir.delete();
     }
-    
+
     @Override
     // Modified moveFile to accept source and destination names as parameters
-    public void moveFile(String sourceName, String destinationName) {
+    public void moveFile(String[] parts) {
+        if (parts.length != 3) {
+            try {
+                outputStream.writeUTF(FTPStatus.message(FTPStatus.SYNTAX_ERROR) + "Usage: move <source> <destination>");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return;
+        }
+        String sourceName = parts[1];
+        String destinationName = parts[2];
         try {
             if (!isPathWithinAllowedDirectory(sourceName) || !isPathWithinAllowedDirectory(destinationName)) {
                 outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_ACTION_NOT_TAKEN)
@@ -226,7 +266,8 @@ public class UserFTPFunctions extends AbstractFTPFunctions {
     @Override
     public void showHelp() {
         try {
-            outputStream.writeUTF("Available commands: put, get <filepath>, ls, cd <dirname>, delete <filename>, mkdir <dirName>, rmdir <dirName>, move <source> <destination>, pwd, help, quit");
+            outputStream.writeUTF(
+                    "Available commands: put, get <filepath>, ls, cd <dirname>, delete <filename>, mkdir <dirName>, rmdir <dirName>, move <source> <destination>, pwd, help, quit");
         } catch (IOException e) {
             e.printStackTrace();
         }

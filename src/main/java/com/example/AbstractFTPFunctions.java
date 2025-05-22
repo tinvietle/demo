@@ -3,7 +3,6 @@ package com.example;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 
@@ -87,7 +86,16 @@ public abstract class AbstractFTPFunctions {
         }
     }
 
-    public void listFiles() {
+    public void listFiles(String[] parts) {
+        if (parts.length >= 2){
+            try {
+                outputStream.writeUTF("Usage: ls <directory>");
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+            return;
+        }
         System.out.println("Listing files...");
         try {
             // Compute the relative directory using canonical paths similar to
@@ -162,7 +170,16 @@ public abstract class AbstractFTPFunctions {
         }
     }
 
-    public void changeDirectory(String newDirectory) {
+    public void changeDirectory(String[] parts) {
+        if (parts.length != 2) {
+            try {
+                outputStream.writeUTF(FTPStatus.message(FTPStatus.SYNTAX_ERROR) + ": Usage: cd <directory>");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return;
+        }
+        String newDirectory = parts[1];
         try {
             if (newDirectory == null || newDirectory.trim().isEmpty()) {
                 outputStream.writeUTF(FTPStatus.message(FTPStatus.SYNTAX_ERROR) + ": Usage: cd <directory>");
@@ -216,8 +233,17 @@ public abstract class AbstractFTPFunctions {
         }
     }
 
-    public void sendFile(String filePath) {
+    public void sendFile(String[] parts) {
+        if (parts.length != 2) {
+            try {
+                outputStream.writeUTF(FTPStatus.message(FTPStatus.SYNTAX_ERROR) + ": Usage: put <filename>");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return;
+        }
         System.out.println("Sending file...");
+        String filePath = parts[1];
         try {
             if (!isPathWithinAllowedDirectory(filePath)) {
                 outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE)
@@ -278,10 +304,10 @@ public abstract class AbstractFTPFunctions {
     }
 
     // Abstract methods to be implemented by subclasses
-    public abstract void deleteFile(String filePath);
-    public abstract void createDirectory(String dirName);
-    public abstract void deleteDirectory(String dirName);
-    public abstract void receiveFile();
-    public abstract void moveFile(String sourceName, String destinationName);
+    public abstract void deleteFile(String[] parts);
+    public abstract void createDirectory(String[] parts);
+    public abstract void deleteDirectory(String[] parts);
+    public abstract void receiveFile(String[] parts);
+    public abstract void moveFile(String[] parts);
     public abstract void showHelp();
 }

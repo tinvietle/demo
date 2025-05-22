@@ -7,8 +7,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.Socket;
-import java.io.FileOutputStream;
-import java.io.FileInputStream;
+
 
 import javax.swing.JFileChooser;
 

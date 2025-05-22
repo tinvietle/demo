@@ -16,7 +16,6 @@ public class ClientSending implements Runnable{
 
         Scanner bp = new Scanner(System.in);
         DataOutputStream gui = null;
-        ClientHandler clientHandler = new ClientHandler(s);
         try {
             gui = new DataOutputStream(s.getOutputStream());
             while (true) {
@@ -29,6 +28,13 @@ public class ClientSending implements Runnable{
             }
         } catch (IOException ex) {
 
+        }
+
+        bp.close();
+        try {
+            gui.close();
+        } catch (IOException ex) {
+            System.out.println("Error closing DataOutputStream: " + ex.getMessage());
         }
 
     }

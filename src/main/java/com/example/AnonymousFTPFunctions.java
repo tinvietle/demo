@@ -15,27 +15,27 @@ public class AnonymousFTPFunctions extends AbstractFTPFunctions {
     // }
 
     @Override
-    public void receiveFile() {
+    public void receiveFile(String[] parts) {
         deny("Receiving files");
     }
 
     @Override
-    public void deleteFile(String filePath) {
+    public void deleteFile(String[] parts) {
         deny("Deleting files");
     }
 
     @Override
-    public void createDirectory(String dirName) {
+    public void createDirectory(String[] parts) {
         deny("Creating directories");
     }
 
     @Override
-    public void deleteDirectory(String dirName) {
+    public void deleteDirectory(String[] parts) {
         deny("Deleting directories");
     }
 
     @Override
-    public void moveFile(String sourceName, String destinationName) {
+    public void moveFile(String[] parts) {
         deny("Moving files");
     }
 
