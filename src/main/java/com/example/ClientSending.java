@@ -22,10 +22,10 @@ public class ClientSending implements Runnable{
             while (true) {
                 String tam2 = bp.nextLine();
                 gui.writeUTF(tam2);
-                if (tam2.equals("put")){
-                    clientHandler.openFileChoser();
-                }
 
+                if (tam2.equals("quit")){
+                    break;
+                }
             }
         } catch (IOException ex) {
 

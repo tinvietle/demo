@@ -1,6 +1,7 @@
 package com.example;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 
@@ -11,47 +12,63 @@ public class UserFTPFunctions extends AbstractFTPFunctions {
     }
 
     @Override
-    public void sendFile(String filePath) {
-        System.out.println("Sending file...");
+        public void receiveFile() {
         try {
-            if (!isPathWithinAllowedDirectory(filePath)) {
+            outputStream.writeUTF("put allowed");
+            // Read file name and size
+            String fileName = inputStream.readUTF();
+            long fileSize = inputStream.readLong();
+
+            // Security check for path traversal
+            if (fileName.contains("..") || !isPathWithinAllowedDirectory(fileName)) {
                 outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE)
-                        + ": Access denied - cannot access files outside allowed space");
+                        + ": File upload failed - invalid file path");
                 return;
             }
 
-            // Load file for absolute and relative path
-            File file;
-            if (new File(filePath).isAbsolute()) {
-                file = new File("src/main/java/com/example/storage/", filePath);
-            } else {
-                file = new File(serverDirectory, filePath);
+            // Create output file in the server directory
+            File outputFile = new File(serverDirectory, fileName);
+
+            // Verify the path after canonicalization
+            File canonicalFile = outputFile.getCanonicalFile();
+            File canonicalBase = new File(defaultDirectory).getCanonicalFile();
+            if (!canonicalFile.getPath().startsWith(canonicalBase.getPath())) {
+                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE)
+                        + ": File upload failed - invalid file path");
+                return;
             }
 
-            if (file.exists()) {
-                // Trigger Client to receive File instead of normal text
-                outputStream.writeUTF("put");
-                // Send file name and size
-                outputStream.writeUTF(file.getName());
-                outputStream.writeLong(file.length());
-                // Send file data
+            try (FileOutputStream fos = new FileOutputStream(outputFile)) {
                 byte[] buffer = new byte[4096];
                 int bytesRead;
-                try (java.io.FileInputStream fis = new java.io.FileInputStream(file)) {
-                    while ((bytesRead = fis.read(buffer)) != -1) {
-                        outputStream.write(buffer, 0, bytesRead);
-                    }
+                long remaining = fileSize;
+
+                while (remaining > 0 &&
+                        (bytesRead = inputStream.read(buffer, 0, (int) Math.min(buffer.length, remaining))) != -1) {
+                    fos.write(buffer, 0, bytesRead);
+                    remaining -= bytesRead;
                 }
-                // Success status after sending file
-                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_ACTION_OK));
-            } else {
-                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE));
             }
+
+            // Compute the relative path for the uploaded file
+            String basePath = new File(defaultDirectory).getCanonicalPath();
+            String filePath = canonicalFile.getCanonicalPath();
+            String relativeFile = "";
+            if (filePath.startsWith(basePath)) {
+                relativeFile = filePath.substring(basePath.length());
+                if (relativeFile.startsWith(File.separator))
+                    relativeFile = relativeFile.substring(1);
+            }
+            String uploadDisplay = new File(defaultDirectory).getName() + "/" + relativeFile;
+            outputStream.writeUTF(
+                    FTPStatus.message(FTPStatus.FILE_ACTION_OK) + ": File upload successful: " + uploadDisplay);
+            System.out.println("Received file: " + uploadDisplay);
+
         } catch (IOException e) {
             e.printStackTrace();
             try {
                 outputStream.writeUTF(FTPStatus.message(FTPStatus.ACTION_ABORTED)
-                        + ": Error sending file - " + e.getMessage());
+                        + ": File upload failed - " + e.getMessage());
             } catch (IOException ignored) {
             }
         }

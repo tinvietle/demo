@@ -9,15 +9,15 @@ public class AnonymousFTPFunctions extends AbstractFTPFunctions {
         super(socket, serverDirectory);
     }
 
-    @Override
-    public void sendFile(String filePath) {
-        deny("Sending files");
-    }
-
     // @Override
-    // public void receiveFile() {
-    //     deny("Receiving/uploading files");
+    // public void sendFile(String filePath) {
+    //     deny("Sending files");
     // }
+
+    @Override
+    public void receiveFile() {
+        deny("Receiving files");
+    }
 
     @Override
     public void deleteFile(String filePath) {

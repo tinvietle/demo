@@ -19,16 +19,25 @@ public class ClientReceiving implements Runnable {
             while (true) {
 
                 String tam = nhan.readUTF();
-                if (tam.equals("ftp> ")) {
-                    System.out.print("ftp> ");
-                } else {
-                    System.out.println(tam);
+                switch (tam) {
+                    case "ftp> ":
+                        System.out.print("ftp> ");
+                        break;
+                    case "221 Service closing control connection":
+                        System.out.println(tam);
+                        break;
+                    case "put":
+                        clientHandler.receiveFile();
+                        break;
+                    case "put allowed":
+                        clientHandler.openFileChoser();
+                        break;
+                    default:
+                        System.out.println(tam);
+                        break;
                 }
-                if(tam.equals("221 Service closing control connection")){
+                if (tam.equals("221 Service closing control connection")) {
                     break;
-                }
-                if (tam.equals("put")){
-                    clientHandler.receiveFile();
                 }
 
 

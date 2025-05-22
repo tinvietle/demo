@@ -210,10 +210,30 @@ public class ServerHandler implements Runnable {
                 System.out.println("Received: " + message);
                 String[] parts = message.split(" ");
                 message = parts[0];
+
+                // Handle deny commands for anonymous user
+                if (username.equalsIgnoreCase("public")) {
+                    String[] allowed = {"get", "ls", "cd", "pwd", "help", "quit"};
+                    boolean permitted = false;
+                    for (String cmd : allowed) {
+                        if (message.equalsIgnoreCase(cmd)) {
+                            permitted = true;
+                            break;
+                        }
+                    }
+                    if (!permitted) {
+                        output.writeUTF("Permission denied: Anonymous user cannot perform: " + message);
+                        continue;
+                    }
+                }
+
+                // Handle commands
                 switch (message) {
                     case "put":
-                        boolean isAnonymous = username.equalsIgnoreCase("public");
-                        ftp.receiveFile(isAnonymous);
+                        if (parts.length != 1){
+                            output.writeUTF("Usage: put");
+                        }
+                        ftp.receiveFile();
                         break;
                     case "get":
                         if (parts.length != 2) {
