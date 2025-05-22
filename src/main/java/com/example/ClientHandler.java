@@ -10,6 +10,7 @@ import java.net.Socket;
 
 
 import javax.swing.JFileChooser;
+import javax.swing.JFrame;
 
 public class ClientHandler {
     private Socket socket;
@@ -28,15 +29,33 @@ public class ClientHandler {
     }
 
     public void openFileChoser() {
+        // Create a parent frame with proper setup
+        JFrame parentFrame = new JFrame();
+        parentFrame.setLocationRelativeTo(null);  // Center on screen
+        parentFrame.setVisible(true);  // Make it visible - this is critical
+        
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Select a file to upload");
-        int userSelection = fileChooser.showOpenDialog(null);
-        if (userSelection == JFileChooser.APPROVE_OPTION) {
-            File fileToUpload = fileChooser.getSelectedFile();
-            System.out.println("Selected file: " + fileToUpload.getAbsolutePath());
-            uploadFile(fileToUpload);
+        
+        // Use the parent frame for the dialog
+        int userSelection = fileChooser.showOpenDialog(parentFrame);
+        
+        File fileToUpload = null;
+        while (fileToUpload == null) {
+            if (userSelection == JFileChooser.APPROVE_OPTION) {
+                fileToUpload = fileChooser.getSelectedFile();
+                System.out.println("Selected file: " + fileToUpload.getAbsolutePath());
+                uploadFile(fileToUpload);
+            } else {
+                System.out.println("No file selected. Please select a file.");
+                userSelection = fileChooser.showOpenDialog(parentFrame);
+            }
         }
+        
+        // Dispose of the parent frame when done
+        parentFrame.dispose();
     }
+
 
     public void uploadFile(File file) {
         // Send file name and size

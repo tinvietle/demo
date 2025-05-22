@@ -37,6 +37,7 @@ public class ClientReceiving implements Runnable {
                         break;
                 }
                 if (tam.equals("221 Service closing control connection")) {
+                    System.out.println("221 Server closed connection");
                     break;
                 }
 
