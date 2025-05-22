@@ -211,22 +211,6 @@ public class ServerHandler implements Runnable {
                 String[] parts = userInput.split(" ");
                 message = parts[0];
 
-                // Handle deny commands for anonymous user
-                if (username.equalsIgnoreCase("public")) {
-                    String[] allowed = {"get", "ls", "cd", "pwd", "help", "quit"};
-                    boolean permitted = false;
-                    for (String cmd : allowed) {
-                        if (message.equalsIgnoreCase(cmd)) {
-                            permitted = true;
-                            break;
-                        }
-                    }
-                    if (!permitted) {
-                        output.writeUTF("Permission denied: Anonymous user cannot perform: " + message);
-                        continue;
-                    }
-                }
-
                 // Handle commands
                 switch (message) {
                     case "put":
@@ -253,10 +237,10 @@ public class ServerHandler implements Runnable {
                         ftp.moveFile(parts);
                         break;
                     case "pwd":
-                        ftp.printWorkingDirectory();
+                        ftp.printWorkingDirectory(parts);
                         break;
                     case "help":
-                        ftp.showHelp();
+                        ftp.showHelp(parts);
                         break;
                     case "quit":
                         output.writeUTF("221 Service closing control connection"); 

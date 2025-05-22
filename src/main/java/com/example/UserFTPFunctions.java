@@ -14,8 +14,8 @@ public class UserFTPFunctions extends AbstractFTPFunctions {
     @Override
     public void receiveFile(String[] parts) {
         try {
-            if (parts.length != 1) {
-                outputStream.writeUTF(FTPStatus.message(FTPStatus.SYNTAX_ERROR) + "Usage: put");
+            if (!validateCommand(parts, 1, "Usage: put")){
+                return;
             }
             outputStream.writeUTF("put allowed");
             // Read file name and size
@@ -79,12 +79,7 @@ public class UserFTPFunctions extends AbstractFTPFunctions {
 
     @Override
     public void deleteFile(String[] parts) {
-        if (parts.length != 2) {
-            try {
-                outputStream.writeUTF(FTPStatus.message(FTPStatus.SYNTAX_ERROR) + "Usage: delete <filename>");
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+        if (!validateCommand(parts, 2, "Usage: delete <filename>")) {
             return;
         }
         String dirName = parts[1];
@@ -118,12 +113,7 @@ public class UserFTPFunctions extends AbstractFTPFunctions {
     @Override
     // Modified createDirectory to accept the directory name as a parameter
     public void createDirectory(String[] parts) {
-        if (parts.length != 2) {
-            try {
-                outputStream.writeUTF(FTPStatus.message(FTPStatus.SYNTAX_ERROR) + "Usage: mkdir <dirname>");
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+        if (!validateCommand(parts, 2, "Usage: mkdir <dirname>")) {
             return;
         }
         String dirName = parts[1];
@@ -161,12 +151,7 @@ public class UserFTPFunctions extends AbstractFTPFunctions {
     @Override
     // Modified deleteDirectory to accept the directory name as a parameter
     public void deleteDirectory(String[] parts) {
-        if (parts.length != 2) {
-            try {
-                outputStream.writeUTF(FTPStatus.message(FTPStatus.SYNTAX_ERROR) + "Usage: rmdir <dirname>");
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+        if (!validateCommand(parts, 2, "Usage: rmdir <dirname>")) {
             return;
         }
         String dirName = parts[1];
@@ -215,12 +200,7 @@ public class UserFTPFunctions extends AbstractFTPFunctions {
     @Override
     // Modified moveFile to accept source and destination names as parameters
     public void moveFile(String[] parts) {
-        if (parts.length != 3) {
-            try {
-                outputStream.writeUTF(FTPStatus.message(FTPStatus.SYNTAX_ERROR) + "Usage: move <source> <destination>");
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+        if (!validateCommand(parts, 3, "Usage: move <source> <destination>")) {
             return;
         }
         String sourceName = parts[1];
@@ -264,7 +244,7 @@ public class UserFTPFunctions extends AbstractFTPFunctions {
     }
 
     @Override
-    public void showHelp() {
+    public void showHelp(String[] parts) {
         try {
             outputStream.writeUTF(
                     "Available commands: put, get <filepath>, ls, cd <dirname>, delete <filename>, mkdir <dirName>, rmdir <dirName>, move <source> <destination>, pwd, help, quit");

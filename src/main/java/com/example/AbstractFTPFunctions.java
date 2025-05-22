@@ -33,25 +33,54 @@ public abstract class AbstractFTPFunctions {
 
         public static String message(int code) {
             switch (code) {
-                case COMMAND_OK: return "200 Command okay";
-                case SERVICE_READY: return "220 Service ready for new user";
-                case CLOSING_DATA: return "226 Closing data connection";
-                case USER_LOGGED_IN: return "230 User logged in, proceed";
-                case FILE_ACTION_OK: return "250 Requested file action okay, completed";
-                case USERNAME_OK: return "331 User name okay, need password";
-                case CANT_OPEN_DATA: return "425 Can't open data connection";
-                case FILE_ACTION_NOT_TAKEN: return "450 Requested file action not taken";
-                case ACTION_ABORTED: return "451 Requested action aborted";
-                case INSUFFICIENT_STORAGE: return "452 Insufficient storage";
-                case NOT_LOGGED_IN: return "530 Not logged in";
-                case FILE_UNAVAILABLE: return "550 Requested action not taken. File unavailable";
-                case SYNTAX_ERROR: return "500 Syntax error, command unrecognized";
-                case ACTION_NOT_IMPLEMENTED: return "502 Command not implemented";
-                case BAD_SEQUENCE: return "503 Bad sequence of commands";
-                case PARAMETER_NOT_IMPLEMENTED: return "504 Command not implemented for that parameter";
-                default: return code + " Unknown Status Code";
+                case COMMAND_OK:
+                    return "200 Command okay";
+                case SERVICE_READY:
+                    return "220 Service ready for new user";
+                case CLOSING_DATA:
+                    return "226 Closing data connection";
+                case USER_LOGGED_IN:
+                    return "230 User logged in, proceed";
+                case FILE_ACTION_OK:
+                    return "250 Requested file action okay, completed";
+                case USERNAME_OK:
+                    return "331 User name okay, need password";
+                case CANT_OPEN_DATA:
+                    return "425 Can't open data connection";
+                case FILE_ACTION_NOT_TAKEN:
+                    return "450 Requested file action not taken";
+                case ACTION_ABORTED:
+                    return "451 Requested action aborted";
+                case INSUFFICIENT_STORAGE:
+                    return "452 Insufficient storage";
+                case NOT_LOGGED_IN:
+                    return "530 Not logged in";
+                case FILE_UNAVAILABLE:
+                    return "550 Requested action not taken. File unavailable";
+                case SYNTAX_ERROR:
+                    return "500 Syntax error, command unrecognized";
+                case ACTION_NOT_IMPLEMENTED:
+                    return "502 Command not implemented";
+                case BAD_SEQUENCE:
+                    return "503 Bad sequence of commands";
+                case PARAMETER_NOT_IMPLEMENTED:
+                    return "504 Command not implemented for that parameter";
+                default:
+                    return code + " Unknown Status Code";
             }
         }
+    }
+
+    protected boolean validateCommand(String[] parts, int expectedLength, String usage) {
+        if (parts.length != expectedLength) {
+            try {
+                outputStream.writeUTF(FTPStatus.message(FTPStatus.SYNTAX_ERROR) + ": " + usage);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return false;
+        }
+        return true;
     }
 
     public AbstractFTPFunctions(Socket socket, String serverDirectory) {
@@ -87,13 +116,7 @@ public abstract class AbstractFTPFunctions {
     }
 
     public void listFiles(String[] parts) {
-        if (parts.length >= 2){
-            try {
-                outputStream.writeUTF("Usage: ls <directory>");
-            } catch (IOException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
+        if (!validateCommand(parts, 1, "Usage: ls")) {
             return;
         }
         System.out.println("Listing files...");
@@ -148,7 +171,10 @@ public abstract class AbstractFTPFunctions {
         }
     }
 
-    public void printWorkingDirectory() {
+    public void printWorkingDirectory(String[] parts) {
+        if (!validateCommand(parts, 1, "Usage: pwd")) {
+            return;
+        }
         try {
             String baseFolder = new File(defaultDirectory).getName();
             String basePath = new File(defaultDirectory).getCanonicalPath();
@@ -171,12 +197,7 @@ public abstract class AbstractFTPFunctions {
     }
 
     public void changeDirectory(String[] parts) {
-        if (parts.length != 2) {
-            try {
-                outputStream.writeUTF(FTPStatus.message(FTPStatus.SYNTAX_ERROR) + ": Usage: cd <directory>");
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+        if (!validateCommand(parts, 2, "Usage: cd <directory>")) {
             return;
         }
         String newDirectory = parts[1];
@@ -234,12 +255,7 @@ public abstract class AbstractFTPFunctions {
     }
 
     public void sendFile(String[] parts) {
-        if (parts.length != 2) {
-            try {
-                outputStream.writeUTF(FTPStatus.message(FTPStatus.SYNTAX_ERROR) + ": Usage: put <filename>");
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+        if (!validateCommand(parts, 2, "Usage: get <file>")) {
             return;
         }
         System.out.println("Sending file...");
@@ -300,14 +316,20 @@ public abstract class AbstractFTPFunctions {
         e.printStackTrace();
         try {
             outputStream.writeUTF("Error: " + e.getMessage());
-        } catch (IOException ignored) {}
+        } catch (IOException ignored) {
+        }
     }
 
     // Abstract methods to be implemented by subclasses
     public abstract void deleteFile(String[] parts);
+
     public abstract void createDirectory(String[] parts);
+
     public abstract void deleteDirectory(String[] parts);
+
     public abstract void receiveFile(String[] parts);
+
     public abstract void moveFile(String[] parts);
-    public abstract void showHelp();
+
+    public abstract void showHelp(String[] parts);
 }
