@@ -55,18 +55,31 @@ public abstract class AbstractFTPFunctions {
         }
     }
 
-    public AbstractFTPFunctions(Socket socket, String serverDirectory) throws IOException {
+    public AbstractFTPFunctions(Socket socket, String serverDirectory) {
         this.socket = socket;
         this.serverDirectory = serverDirectory;
         this.defaultDirectory = serverDirectory;
-        this.outputStream = new DataOutputStream(socket.getOutputStream());
-        this.inputStream = new DataInputStream(socket.getInputStream());
+
+        try {
+            this.outputStream = new DataOutputStream(socket.getOutputStream());
+            this.inputStream = new DataInputStream(socket.getInputStream());
+        } catch (Exception e) {
+            System.out.println("Error initializing output stream: " + e.getMessage());
+        }
     }
 
     protected boolean isPathWithinAllowedDirectory(String path) {
         try {
             File baseDir = new File(defaultDirectory).getCanonicalFile();
-            File targetPath = new File(serverDirectory, path).getCanonicalFile();
+            // Check if the path is absolute or relative
+            File targetPath;
+            if (new File(path).isAbsolute()) {
+                targetPath = new File("src/main/java/com/example/storage/", path);
+            } else {
+                targetPath = new File(serverDirectory, path);
+            }
+            targetPath = targetPath.getCanonicalFile();
+
             return targetPath.getPath().startsWith(baseDir.getPath());
         } catch (IOException e) {
             e.printStackTrace();
@@ -75,74 +88,167 @@ public abstract class AbstractFTPFunctions {
     }
 
     public void listFiles() {
+        System.out.println("Listing files...");
         try {
-            File directory = new File(serverDirectory).getCanonicalFile();
-            File base = new File(defaultDirectory).getCanonicalFile();
-            if (!directory.getPath().startsWith(base.getPath())) {
-                outputStream.writeUTF("Access denied");
+            // Compute the relative directory using canonical paths similar to
+            // printWorkingDirectory()
+            String baseFolder = new File(defaultDirectory).getName();
+            String basePath = new File(defaultDirectory).getCanonicalPath();
+            String currentPath = new File(serverDirectory).getCanonicalPath();
+            String relative = "";
+            if (currentPath.startsWith(basePath)) {
+                relative = currentPath.substring(basePath.length());
+                if (relative.startsWith(File.separator))
+                    relative = relative.substring(1);
+            }
+            String display = baseFolder;
+            if (!relative.isEmpty())
+                display += "/" + relative;
+            if (!display.endsWith("/"))
+                display += "/";
+            outputStream.writeUTF(FTPStatus.message(FTPStatus.COMMAND_OK) + ": Directory listing for: " + display);
+
+            File directory = new File(serverDirectory);
+
+            // Verify the directory is within allowed space
+            File canonicalDir = directory.getCanonicalFile();
+            File canonicalBase = new File(defaultDirectory).getCanonicalFile();
+            if (!canonicalDir.getPath().startsWith(canonicalBase.getPath())) {
+                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_ACTION_NOT_TAKEN) + ": Access denied");
                 return;
             }
 
             String[] files = directory.list();
-            outputStream.writeUTF(FTPStatus.message(FTPStatus.COMMAND_OK));
             if (files != null) {
-                for (String file : files) outputStream.writeUTF(file);
+                for (String file : files) {
+                    outputStream.writeUTF(file);
+                }
+                if (files.length == 0) {
+                    outputStream.writeUTF(FTPStatus.message(FTPStatus.COMMAND_OK) + ": Directory is empty");
+                }
+            } else {
+                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE) + ": Directory cannot be read");
             }
         } catch (IOException e) {
-            handleException(e);
+            e.printStackTrace();
+            try {
+                outputStream.writeUTF(
+                        FTPStatus.message(FTPStatus.ACTION_ABORTED) + ": Error listing files: " + e.getMessage());
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
         }
     }
 
     public void printWorkingDirectory() {
         try {
-            outputStream.writeUTF("Server working directory: " + serverDirectory);
+            String baseFolder = new File(defaultDirectory).getName();
+            String basePath = new File(defaultDirectory).getCanonicalPath();
+            String currentPath = new File(serverDirectory).getCanonicalPath();
+            String relative = "";
+            if (currentPath.startsWith(basePath)) {
+                relative = currentPath.substring(basePath.length());
+                if (relative.startsWith(File.separator))
+                    relative = relative.substring(1);
+            }
+            String display = baseFolder;
+            if (!relative.isEmpty())
+                display += "/" + relative;
+            if (!display.endsWith("/"))
+                display += "/";
+            outputStream.writeUTF(FTPStatus.message(FTPStatus.COMMAND_OK) + ": Server working directory: " + display);
         } catch (IOException e) {
-            handleException(e);
+            e.printStackTrace();
         }
     }
 
     public void changeDirectory(String newDirectory) {
         try {
-            File baseDir = new File(defaultDirectory).getCanonicalFile();
-            File targetDir = "..".equals(newDirectory)
-                    ? new File(serverDirectory).getParentFile()
-                    : new File(serverDirectory, newDirectory).getCanonicalFile();
-
-            if (targetDir == null || !targetDir.getPath().startsWith(baseDir.getPath()) || !targetDir.isDirectory()) {
-                outputStream.writeUTF("Access denied or invalid directory.");
+            if (newDirectory == null || newDirectory.trim().isEmpty()) {
+                outputStream.writeUTF(FTPStatus.message(FTPStatus.SYNTAX_ERROR) + ": Usage: cd <directory>");
                 return;
             }
+            File baseDir = new File(defaultDirectory).getCanonicalFile();
+            File targetDir;
 
-            serverDirectory = targetDir.getPath();
-            outputStream.writeUTF("Changed directory to: " + serverDirectory);
+            if (new File(newDirectory).isAbsolute()) {
+                targetDir = new File("src/main/java/com/example/storage/", newDirectory);
+            } else {
+                targetDir = new File(serverDirectory, newDirectory);
+            }
+
+            targetDir = targetDir.getCanonicalFile();
+            if (!targetDir.getPath().startsWith(baseDir.getPath())) {
+                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE)
+                        + ": Access denied - unable to change directory.");
+                return;
+            }
+            if (targetDir.exists() && targetDir.isDirectory()) {
+                serverDirectory = targetDir.getPath();
+                // Compute the relative path as in printWorkingDirectory()
+                String baseFolder = new File(defaultDirectory).getName();
+                String basePath = new File(defaultDirectory).getCanonicalPath();
+                String currentPath = new File(serverDirectory).getCanonicalPath();
+                String relative = "";
+                if (currentPath.startsWith(basePath)) {
+                    relative = currentPath.substring(basePath.length());
+                    if (relative.startsWith(File.separator))
+                        relative = relative.substring(1);
+                }
+                String display = baseFolder;
+                if (!relative.isEmpty())
+                    display += "/" + relative;
+                if (!display.endsWith("/"))
+                    display += "/";
+                outputStream
+                        .writeUTF(FTPStatus.message(FTPStatus.FILE_ACTION_OK) + ": Changed directory to: " + display);
+            } else {
+                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE) + ": Invalid directory");
+            }
         } catch (IOException e) {
-            handleException(e);
+            e.printStackTrace();
+            try {
+                outputStream.writeUTF(
+                        FTPStatus.message(FTPStatus.ACTION_ABORTED) + ": Error changing directory - " + e.getMessage());
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
         }
     }
 
-    public void receiveFile() {
+    public void receiveFile(boolean isGuest) {
         try {
             // Read file name and size
             String fileName = inputStream.readUTF();
             long fileSize = inputStream.readLong();
+            final long MAX_FILE_SIZE = 1024 * 1024 * 10; // 10 MB limit
+
+            // Check if user is guest and limit file size
+            if (isGuest && fileSize > MAX_FILE_SIZE) { // 1 MB limit for guest users
+                outputStream.writeUTF(FTPStatus.message(FTPStatus.INSUFFICIENT_STORAGE)
+                        + ": File upload failed - size exceeds limit for guest users");
+                return;
+            }
 
             // Security check for path traversal
             if (fileName.contains("..") || !isPathWithinAllowedDirectory(fileName)) {
-                outputStream.writeUTF("File upload failed: Access denied - invalid file path");
+                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE)
+                        + ": File upload failed - invalid file path");
                 return;
             }
 
             // Create output file in the server directory
             File outputFile = new File(serverDirectory, fileName);
-            
+
             // Verify the path after canonicalization
             File canonicalFile = outputFile.getCanonicalFile();
             File canonicalBase = new File(defaultDirectory).getCanonicalFile();
             if (!canonicalFile.getPath().startsWith(canonicalBase.getPath())) {
-                outputStream.writeUTF("File upload failed: Access denied - invalid file path");
+                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE)
+                        + ": File upload failed - invalid file path");
                 return;
             }
-            
+
             try (FileOutputStream fos = new FileOutputStream(outputFile)) {
                 byte[] buffer = new byte[4096];
                 int bytesRead;
@@ -155,14 +261,25 @@ public abstract class AbstractFTPFunctions {
                 }
             }
 
-            // Send confirmation to client
-            outputStream.writeUTF("File upload successful: " + fileName);
-            System.out.println("Received file: " + fileName);
+            // Compute the relative path for the uploaded file
+            String basePath = new File(defaultDirectory).getCanonicalPath();
+            String filePath = canonicalFile.getCanonicalPath();
+            String relativeFile = "";
+            if (filePath.startsWith(basePath)) {
+                relativeFile = filePath.substring(basePath.length());
+                if (relativeFile.startsWith(File.separator))
+                    relativeFile = relativeFile.substring(1);
+            }
+            String uploadDisplay = new File(defaultDirectory).getName() + "/" + relativeFile;
+            outputStream.writeUTF(
+                    FTPStatus.message(FTPStatus.FILE_ACTION_OK) + ": File upload successful: " + uploadDisplay);
+            System.out.println("Received file: " + uploadDisplay);
 
         } catch (IOException e) {
             e.printStackTrace();
             try {
-                outputStream.writeUTF("File upload failed: " + e.getMessage());
+                outputStream.writeUTF(FTPStatus.message(FTPStatus.ACTION_ABORTED)
+                        + ": File upload failed - " + e.getMessage());
             } catch (IOException ignored) {
             }
         }

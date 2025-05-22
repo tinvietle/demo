@@ -212,48 +212,87 @@ public class ServerHandler implements Runnable {
                 message = parts[0];
                 switch (message) {
                     case "put":
-                        ftp.receiveFile();
+                        boolean isAnonymous = username.equalsIgnoreCase("public");
+                        ftp.receiveFile(isAnonymous);
                         break;
                     case "get":
-                        // Get the file name from message
-                        String filename = parts[1];
-                        String filePath = serverDirectory + "/" + filename;
-                        ftp.sendFile(filePath);
-                        break;
+                        if (parts.length != 2) {
+                                output.writeUTF("Usage: get <filename>");
+                            } else {
+                                try {
+                                    String filename = parts[1];
+                                    // Directly pass the filename since FTPFunctions.sendFile already incorporates serverDirectory.
+                                    ftp.sendFile(filename);
+                                } catch(Exception e){
+                                    output.writeUTF("Error executing get: " + e.getMessage());
+                                }
+                            }
+                            break;
                     case "ls":
+                        if (parts.length >= 2){
+                            output.writeUTF("Usage: ls <directory>");
+                            break;
+                        }
                         ftp.listFiles();
                         break;
-                    case "delete":
+                    case "rm":
                         // Get the file name from message
-                        String fileToDelete = parts[1];
-                        String filePathToDelete = serverDirectory + "/" + fileToDelete;
-                        ftp.deleteFile(filePathToDelete);
-                        break;
+                        if(parts.length != 2){
+                                output.writeUTF("Usage: delete <filename>");
+                            } else {
+                                try {
+                                    String fileToDelete = parts[1];
+                                    ftp.deleteFile(fileToDelete);
+                                } catch(Exception e){
+                                    output.writeUTF("Error executing delete: " + e.getMessage());
+                                }
+                            }
+                            break;
                     case "mkdir":
-                        if(parts.length >= 2){
-                            ftp.createDirectory(parts[1]);
-                        } else {
-                            output.writeUTF("Usage: mkdir <directoryName>");
-                        }
-                        break;
+                        if(parts.length != 2){
+                                output.writeUTF("Usage: mkdir <directoryName>");
+                            } else {
+                                try {
+                                    ftp.createDirectory(parts[1]);
+                                } catch(Exception e){
+                                    output.writeUTF("Error executing mkdir: " + e.getMessage());
+                                }
+                            }
+                            break;
                     case "rmdir":
-                        if(parts.length >= 2){
-                            ftp.deleteDirectory(parts[1]);
-                        } else {
-                            output.writeUTF("Usage: rmdir <directoryName>");
-                        }
-                        break;
+                        if(parts.length != 2){
+                                output.writeUTF("Usage: rmdir <directoryName>");
+                            } else {
+                                try {
+                                    ftp.deleteDirectory(parts[1]);
+                                } catch(Exception e){
+                                    output.writeUTF("Error executing rmdir: " + e.getMessage());
+                                }
+                            }
+                            break;
                     case "move":
-                        if(parts.length >= 3){
-                            ftp.moveFile(parts[1], parts[2]);
-                        } else {
-                            output.writeUTF("Usage: move <source> <destination>");
-                        }
-                        break;
+                        if(parts.length != 3){
+                                output.writeUTF("Usage: move <source> <destination>");
+                            } else {
+                                try {
+                                    ftp.moveFile(parts[1], parts[2]);
+                                } catch(Exception e){
+                                    output.writeUTF("Error executing move: " + e.getMessage());
+                                }
+                            }
+                            break;
                     case "pwd":
+                        if (parts.length >= 2){
+                            output.writeUTF("Usage: pwd");
+                            break;
+                        }
                         ftp.printWorkingDirectory();
                         break;
                     case "help":
+                        if (parts.length >= 2){
+                            output.writeUTF("Usage: help");
+                            break;
+                        }
                         ftp.showHelp();
                         break;
                     case "quit":
@@ -262,15 +301,19 @@ public class ServerHandler implements Runnable {
                         socket.close();
                         return;
                     case "cd":
-                        if (parts.length >= 2){
-                            String directory = parts[1];
-                            ftp.changeDirectory(directory);
-                        } else {
-                            output.writeUTF("Usage: cd <directory>");
-                        }
-                        break;
+                        if(parts.length != 2){
+                                output.writeUTF("Usage: cd <directory>");
+                            } else {
+                                try {
+                                    String directory = parts[1];
+                                    ftp.changeDirectory(directory);
+                                } catch(Exception e){
+                                    output.writeUTF("Error executing cd: " + e.getMessage());
+                                }
+                            }
+                            break;
                     default:
-                        System.out.println("Unknown command");
+                            output.writeUTF("Unknown command. Type 'help' for a list of commands.");
                 }
             }
         } catch (IOException e) {

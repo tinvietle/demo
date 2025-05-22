@@ -15,11 +15,19 @@ public class UserFTPFunctions extends AbstractFTPFunctions {
         System.out.println("Sending file...");
         try {
             if (!isPathWithinAllowedDirectory(filePath)) {
-                outputStream.writeUTF("Access denied - cannot access files outside allowed space");
+                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE)
+                        + ": Access denied - cannot access files outside allowed space");
                 return;
             }
-            
-            File file = new File(serverDirectory, filePath);
+
+            // Load file for absolute and relative path
+            File file;
+            if (new File(filePath).isAbsolute()) {
+                file = new File("src/main/java/com/example/storage/", filePath);
+            } else {
+                file = new File(serverDirectory, filePath);
+            }
+
             if (file.exists()) {
                 // Trigger Client to receive File instead of normal text
                 outputStream.writeUTF("put");
@@ -34,31 +42,47 @@ public class UserFTPFunctions extends AbstractFTPFunctions {
                         outputStream.write(buffer, 0, bytesRead);
                     }
                 }
-            } else {
-                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE));
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    @Override
-    public void deleteFile(String filePath) {
-        System.out.println("Deleting file...");
-        try {
-            if (!isPathWithinAllowedDirectory(filePath)) {
-                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE) + ": Access denied - cannot delete files outside allowed space");
-                return;
-            }
-            
-            File file = new File(serverDirectory, filePath);
-            if (file.delete()) {
+                // Success status after sending file
                 outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_ACTION_OK));
             } else {
                 outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE));
             }
         } catch (IOException e) {
             e.printStackTrace();
+            try {
+                outputStream.writeUTF(FTPStatus.message(FTPStatus.ACTION_ABORTED)
+                        + ": Error sending file - " + e.getMessage());
+            } catch (IOException ignored) {
+            }
+        }
+    }
+
+    @Override
+    public void deleteFile(String dirName) {
+        try {
+            if (!isPathWithinAllowedDirectory(dirName)) {
+                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_ACTION_NOT_TAKEN)
+                        + ": Access denied - cannot delete directories outside allowed space");
+                return;
+            }
+
+            File dir = new File(serverDirectory, dirName);
+            if (dir.exists() && dir.isDirectory()) {
+                deleteDirectoryRecursively(dir);
+                outputStream.writeUTF(
+                        FTPStatus.message(FTPStatus.FILE_ACTION_OK) + ": Directory deleted successfully: " + dirName);
+            } else {
+                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE)
+                        + ": Directory does not exist or is not a directory: " + dirName);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            try {
+                outputStream.writeUTF(
+                        FTPStatus.message(FTPStatus.ACTION_ABORTED) + ": Error deleting directory: " + e.getMessage());
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
         }
     }
 
@@ -67,22 +91,32 @@ public class UserFTPFunctions extends AbstractFTPFunctions {
     public void createDirectory(String dirName) {
         try {
             if (!isPathWithinAllowedDirectory(dirName)) {
-                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE) + ": Access denied - cannot create directories outside allowed space");
+                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_ACTION_NOT_TAKEN)
+                        + ": Access denied - cannot create directories outside allowed space");
                 return;
             }
-            
+
             File newDir = new File(serverDirectory, dirName);
             if (!newDir.exists()) {
                 if (newDir.mkdir()) {
-                    outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_ACTION_OK) + ": Directory created successfully: " + dirName);
+                    outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_ACTION_OK)
+                            + ": Directory created successfully: " + dirName);
                 } else {
-                    outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE) + ": Failed to create directory: " + dirName);
+                    outputStream.writeUTF(
+                            FTPStatus.message(FTPStatus.ACTION_ABORTED) + ": Failed to create directory: " + dirName);
                 }
             } else {
-                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE) + ": Directory already exists: " + dirName);
+                outputStream.writeUTF(
+                        FTPStatus.message(FTPStatus.FILE_ACTION_NOT_TAKEN) + ": Directory already exists: " + dirName);
             }
         } catch (IOException e) {
             e.printStackTrace();
+            try {
+                outputStream.writeUTF(
+                        FTPStatus.message(FTPStatus.ACTION_ABORTED) + ": Error creating directory: " + e.getMessage());
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
         }
     }
 
@@ -91,21 +125,28 @@ public class UserFTPFunctions extends AbstractFTPFunctions {
     public void deleteDirectory(String dirName) {
         try {
             if (!isPathWithinAllowedDirectory(dirName)) {
-                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE) + ": Access denied - cannot delete directories outside allowed space");
+                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_ACTION_NOT_TAKEN)
+                        + ": Access denied - cannot delete directories outside allowed space");
                 return;
             }
-            
+
             File dir = new File(serverDirectory, dirName);
             if (dir.exists() && dir.isDirectory()) {
                 deleteDirectoryRecursively(dir);
-                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_ACTION_OK) + ": Directory deleted successfully: " + dirName);
+                outputStream.writeUTF(
+                        FTPStatus.message(FTPStatus.FILE_ACTION_OK) + ": Directory deleted successfully: " + dirName);
             } else {
-                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE) + ": Directory does not exist or is not a directory: " + dirName);
+                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE)
+                        + ": Directory does not exist or is not a directory: " + dirName);
             }
-        } catch(IOException e) {
+        } catch (IOException e) {
             e.printStackTrace();
-            try { outputStream.writeUTF("Error deleting directory: " + e.getMessage()); }
-            catch(IOException ex) { ex.printStackTrace(); }
+            try {
+                outputStream.writeUTF(
+                        FTPStatus.message(FTPStatus.ACTION_ABORTED) + ": Error deleting directory: " + e.getMessage());
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
         }
     }
     
@@ -129,32 +170,46 @@ public class UserFTPFunctions extends AbstractFTPFunctions {
     public void moveFile(String sourceName, String destinationName) {
         try {
             if (!isPathWithinAllowedDirectory(sourceName) || !isPathWithinAllowedDirectory(destinationName)) {
-                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE) + ": Access denied - cannot move files outside allowed space");
+                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_ACTION_NOT_TAKEN)
+                        + ": Access denied - cannot move files outside allowed space");
                 return;
             }
-            
+
             File sourceFile = new File(serverDirectory, sourceName);
-            File destFile = new File(serverDirectory, destinationName);
-            if(sourceFile.exists()){
-                if(sourceFile.renameTo(destFile)){
+
+            // Check if destinationName is a absolute or relative path
+            File destFile;
+            if (new File(destinationName).isAbsolute()) {
+                destFile = new File("src/main/java/com/example/storage/", destinationName);
+            } else {
+                destFile = new File(serverDirectory, destinationName);
+            }
+
+            if (sourceFile.exists()) {
+                if (sourceFile.renameTo(destFile)) {
                     outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_ACTION_OK));
                 } else {
-                    outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE));
+                    outputStream.writeUTF(FTPStatus.message(FTPStatus.ACTION_ABORTED) + ": File move operation failed");
                 }
             } else {
-                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE) + ": Source file does not exist: " + sourceName);
+                outputStream.writeUTF(
+                        FTPStatus.message(FTPStatus.FILE_UNAVAILABLE) + ": Source file does not exist: " + sourceName);
             }
-        } catch(IOException e) {
+        } catch (IOException e) {
             e.printStackTrace();
-            try { outputStream.writeUTF("Error moving file: " + e.getMessage()); }
-            catch(IOException ex) { ex.printStackTrace(); }
+            try {
+                outputStream.writeUTF(
+                        FTPStatus.message(FTPStatus.ACTION_ABORTED) + ": Error moving file: " + e.getMessage());
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
         }
     }
 
     @Override
     public void showHelp() {
         try {
-            outputStream.writeUTF("Available commands: put, get, ls, cd <dirname>, delete <filename>, mkdir <dirName>, rmdir <dirName>, move <source> <destination>, pwd, help, quit");
+            outputStream.writeUTF("Available commands: put, get <filepath>, ls, cd <dirname>, delete <filename>, mkdir <dirName>, rmdir <dirName>, move <source> <destination>, pwd, help, quit");
         } catch (IOException e) {
             e.printStackTrace();
         }
