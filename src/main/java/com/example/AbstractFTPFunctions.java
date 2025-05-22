@@ -5,6 +5,8 @@ import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 public abstract class AbstractFTPFunctions {
     protected Socket socket;
@@ -96,6 +98,24 @@ public abstract class AbstractFTPFunctions {
         }
     }
 
+    public static String getCommonBasePath(String path1, String path2) {
+        Path p1 = Paths.get(path1).normalize();
+        Path p2 = Paths.get(path2).normalize();
+
+        int minLength = Math.min(p1.getNameCount(), p2.getNameCount());
+        Path common = p1.getRoot(); 
+
+        for (int i = 0; i < minLength; i++) {
+            if (p1.getName(i).equals(p2.getName(i))) {
+                common = common.resolve(p1.getName(i));
+            } else {
+                break;
+            }
+        }
+
+        return common.toString();
+    }
+
     protected boolean isPathWithinAllowedDirectory(String path) {
         try {
             File baseDir = new File(defaultDirectory).getCanonicalFile();
@@ -108,7 +128,8 @@ public abstract class AbstractFTPFunctions {
             }
             targetPath = targetPath.getCanonicalFile();
 
-            return targetPath.getPath().startsWith(baseDir.getPath());
+            String commonBase = getCommonBasePath(baseDir.getCanonicalPath(), targetPath.getCanonicalPath());
+            return (commonBase.equals(baseDir.getCanonicalPath()));
         } catch (IOException e) {
             e.printStackTrace();
             return false;
@@ -197,16 +218,13 @@ public abstract class AbstractFTPFunctions {
     }
 
     public void changeDirectory(String[] parts) {
-        if (!validateCommand(parts, 2, "Usage: cd <directory>")) {
+        if (!validateCommand(parts, 2, "Usage: cd [DIRECTORY]")) {
             return;
         }
+
         String newDirectory = parts[1];
+
         try {
-            if (newDirectory == null || newDirectory.trim().isEmpty()) {
-                outputStream.writeUTF(FTPStatus.message(FTPStatus.SYNTAX_ERROR) + ": Usage: cd <directory>");
-                return;
-            }
-            File baseDir = new File(defaultDirectory).getCanonicalFile();
             File targetDir;
 
             if (new File(newDirectory).isAbsolute()) {
@@ -216,7 +234,7 @@ public abstract class AbstractFTPFunctions {
             }
 
             targetDir = targetDir.getCanonicalFile();
-            if (!targetDir.getPath().startsWith(baseDir.getPath())) {
+            if (!isPathWithinAllowedDirectory(newDirectory)) {
                 outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE)
                         + ": Access denied - unable to change directory.");
                 return;
@@ -255,7 +273,7 @@ public abstract class AbstractFTPFunctions {
     }
 
     public void sendFile(String[] parts) {
-        if (!validateCommand(parts, 2, "Usage: get <file>")) {
+        if (!validateCommand(parts, 2, "Usage: get [FILE]")) {
             return;
         }
         System.out.println("Sending file...");

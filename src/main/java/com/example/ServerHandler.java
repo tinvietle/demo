@@ -220,11 +220,9 @@ public class ServerHandler implements Runnable {
                         ftp.sendFile(parts);
                         break;
                     case "ls":
-                        
                         ftp.listFiles(parts);
                         break;
                     case "rm":
-                        // Get the file name from message
                         ftp.deleteFile(parts);
                         break;
                     case "mkdir":
@@ -242,14 +240,14 @@ public class ServerHandler implements Runnable {
                     case "help":
                         ftp.showHelp(parts);
                         break;
+                    case "cd":
+                        ftp.changeDirectory(parts);
+                        break;
                     case "quit":
                         output.writeUTF("221 Service closing control connection"); 
                         System.out.println("Client disconnected");
                         socket.close();
                         return;
-                    case "cd":
-                        ftp.changeDirectory(parts);
-                        break;
                     default:
                         output.writeUTF("Unknown command. Type 'help' for a list of commands.");
                 }

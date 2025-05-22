@@ -79,7 +79,7 @@ public class UserFTPFunctions extends AbstractFTPFunctions {
 
     @Override
     public void deleteFile(String[] parts) {
-        if (!validateCommand(parts, 2, "Usage: delete <filename>")) {
+        if (!validateCommand(parts, 2, "Usage: rm [FILE]")) {
             return;
         }
         String dirName = parts[1];
@@ -113,7 +113,7 @@ public class UserFTPFunctions extends AbstractFTPFunctions {
     @Override
     // Modified createDirectory to accept the directory name as a parameter
     public void createDirectory(String[] parts) {
-        if (!validateCommand(parts, 2, "Usage: mkdir <dirname>")) {
+        if (!validateCommand(parts, 2, "Usage: mkdir [DIRECTORY]")) {
             return;
         }
         String dirName = parts[1];
@@ -151,7 +151,7 @@ public class UserFTPFunctions extends AbstractFTPFunctions {
     @Override
     // Modified deleteDirectory to accept the directory name as a parameter
     public void deleteDirectory(String[] parts) {
-        if (!validateCommand(parts, 2, "Usage: rmdir <dirname>")) {
+        if (!validateCommand(parts, 2, "Usage: rmdir [DIRECTORY]")) {
             return;
         }
         String dirName = parts[1];
@@ -200,7 +200,7 @@ public class UserFTPFunctions extends AbstractFTPFunctions {
     @Override
     // Modified moveFile to accept source and destination names as parameters
     public void moveFile(String[] parts) {
-        if (!validateCommand(parts, 3, "Usage: move <source> <destination>")) {
+        if (!validateCommand(parts, 3, "Usage: mv [SOURCE] [DESTINATION]")) {
             return;
         }
         String sourceName = parts[1];
@@ -247,7 +247,7 @@ public class UserFTPFunctions extends AbstractFTPFunctions {
     public void showHelp(String[] parts) {
         try {
             outputStream.writeUTF(
-                    "Available commands: put, get <filepath>, ls, cd <dirname>, delete <filename>, mkdir <dirName>, rmdir <dirName>, move <source> <destination>, pwd, help, quit");
+                    "Available commands: put, get [FILE], ls, cd [DIRECTORY], rm [FILE], mkdir [DIRECTORY], rmdir [DIRECTORY], mv [SOURCE] [DESTINATION], pwd, help, quit");
         } catch (IOException e) {
             e.printStackTrace();
         }

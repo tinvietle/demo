@@ -3,8 +3,6 @@ package com.example;
 import java.io.IOException;
 import java.net.Socket;
 
-import com.amazonaws.services.dynamodbv2.xspec.S;
-
 public class AnonymousFTPFunctions extends AbstractFTPFunctions {
 
     public AnonymousFTPFunctions(Socket socket, String serverDirectory) throws IOException {
@@ -44,7 +42,7 @@ public class AnonymousFTPFunctions extends AbstractFTPFunctions {
     @Override
     public void showHelp(String[] parts) {
         try {
-            outputStream.writeUTF("Anonymous user has limited permissions. Available commands: get, ls, cd <dirname>, pwd, help, quit");
+            outputStream.writeUTF("Anonymous user has limited permissions. Available commands: get [FILE], ls, cd [DIRECTORY], pwd, help, quit");
         } catch (IOException e) {
             handleException(e);
         }
