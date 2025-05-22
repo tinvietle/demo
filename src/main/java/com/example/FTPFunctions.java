@@ -13,13 +13,13 @@ public class FTPFunctions {
     DataInputStream inputStream;
     String defaultDirectory;
     String serverDirectory;
-    String baseDirectory; // new field to store the original user directory
+    // String baseDirectory; // new field to store the original user directory
 
     public FTPFunctions(Socket socket, String serverDirectory) {
         this.socket = socket;
         this.serverDirectory = serverDirectory;
         this.defaultDirectory = serverDirectory;
-        this.baseDirectory = serverDirectory; // store the user's home
+        // this.baseDirectory = serverDirectory; // store the user's home
         try {
             this.outputStream = new DataOutputStream(socket.getOutputStream());
             this.inputStream = new DataInputStream(socket.getInputStream());
@@ -201,7 +201,7 @@ public class FTPFunctions {
             }
 
             // Compute the relative path for the uploaded file
-            String basePath = new File(baseDirectory).getCanonicalPath();
+            String basePath = new File(defaultDirectory).getCanonicalPath();
             String filePath = canonicalFile.getCanonicalPath();
             String relativeFile = "";
             if (filePath.startsWith(basePath)) {
@@ -209,7 +209,7 @@ public class FTPFunctions {
                 if (relativeFile.startsWith(File.separator))
                     relativeFile = relativeFile.substring(1);
             }
-            String uploadDisplay = new File(baseDirectory).getName() + "/" + relativeFile;
+            String uploadDisplay = new File(defaultDirectory).getName() + "/" + relativeFile;
             outputStream.writeUTF(
                     FTPStatus.message(FTPStatus.FILE_ACTION_OK) + ": File upload successful: " + uploadDisplay);
             System.out.println("Received file: " + uploadDisplay);
@@ -295,8 +295,8 @@ public class FTPFunctions {
 
     public void printWorkingDirectory() {
         try {
-            String baseFolder = new File(baseDirectory).getName();
-            String basePath = new File(baseDirectory).getCanonicalPath();
+            String baseFolder = new File(defaultDirectory).getName();
+            String basePath = new File(defaultDirectory).getCanonicalPath();
             String currentPath = new File(serverDirectory).getCanonicalPath();
             String relative = "";
             if (currentPath.startsWith(basePath)) {
@@ -321,8 +321,8 @@ public class FTPFunctions {
         try {
             // Compute the relative directory using canonical paths similar to
             // printWorkingDirectory()
-            String baseFolder = new File(baseDirectory).getName();
-            String basePath = new File(baseDirectory).getCanonicalPath();
+            String baseFolder = new File(defaultDirectory).getName();
+            String basePath = new File(defaultDirectory).getCanonicalPath();
             String currentPath = new File(serverDirectory).getCanonicalPath();
             String relative = "";
             if (currentPath.startsWith(basePath)) {
@@ -375,7 +375,7 @@ public class FTPFunctions {
                 outputStream.writeUTF(FTPStatus.message(FTPStatus.SYNTAX_ERROR) + ": Usage: cd <directory>");
                 return;
             }
-            File baseDir = new File(baseDirectory).getCanonicalFile();
+            File baseDir = new File(defaultDirectory).getCanonicalFile();
             File targetDir;
 
             if (new File(newDirectory).isAbsolute()) {
@@ -393,8 +393,8 @@ public class FTPFunctions {
             if (targetDir.exists() && targetDir.isDirectory()) {
                 serverDirectory = targetDir.getPath();
                 // Compute the relative path as in printWorkingDirectory()
-                String baseFolder = new File(baseDirectory).getName();
-                String basePath = new File(baseDirectory).getCanonicalPath();
+                String baseFolder = new File(defaultDirectory).getName();
+                String basePath = new File(defaultDirectory).getCanonicalPath();
                 String currentPath = new File(serverDirectory).getCanonicalPath();
                 String relative = "";
                 if (currentPath.startsWith(basePath)) {
