@@ -142,24 +142,6 @@ public abstract class AbstractFTPFunctions {
         }
         System.out.println("Listing files...");
         try {
-            // Compute the relative directory using canonical paths similar to
-            // printWorkingDirectory()
-            String baseFolder = new File(defaultDirectory).getName();
-            String basePath = new File(defaultDirectory).getCanonicalPath();
-            String currentPath = new File(serverDirectory).getCanonicalPath();
-            String relative = "";
-            if (currentPath.startsWith(basePath)) {
-                relative = currentPath.substring(basePath.length());
-                if (relative.startsWith(File.separator))
-                    relative = relative.substring(1);
-            }
-            String display = baseFolder;
-            if (!relative.isEmpty())
-                display += "/" + relative;
-            if (!display.endsWith("/"))
-                display += "/";
-            outputStream.writeUTF(FTPStatus.message(FTPStatus.COMMAND_OK) + ": Directory listing for: " + display);
-
             File directory = new File(serverDirectory);
 
             // Verify the directory is within allowed space
@@ -191,11 +173,8 @@ public abstract class AbstractFTPFunctions {
             }
         }
     }
-
-    public void printWorkingDirectory(String[] parts) {
-        if (!validateCommand(parts, 1, "Usage: pwd")) {
-            return;
-        }
+    
+    public String displayWorkingDirectory() {
         try {
             String baseFolder = new File(defaultDirectory).getName();
             String basePath = new File(defaultDirectory).getCanonicalPath();
@@ -206,14 +185,32 @@ public abstract class AbstractFTPFunctions {
                 if (relative.startsWith(File.separator))
                     relative = relative.substring(1);
             }
-            String display = baseFolder;
+            String display = "/" + baseFolder;
             if (!relative.isEmpty())
                 display += "/" + relative;
-            if (!display.endsWith("/"))
-                display += "/";
-            outputStream.writeUTF(FTPStatus.message(FTPStatus.COMMAND_OK) + ": Server working directory: " + display);
+            // Change backslashes to forward slashes before returning
+            return display.replace("\\", "/");
         } catch (IOException e) {
             e.printStackTrace();
+            return "";
+        }
+    }
+
+    public void printWorkingDirectory(String[] parts) {
+        if (!validateCommand(parts, 1, "Usage: pwd")) {
+            return;
+        }
+        String display = displayWorkingDirectory();
+        try {
+            outputStream.writeUTF(FTPStatus.message(FTPStatus.COMMAND_OK) + ": Current directory: " + display);
+        } catch (IOException e) {
+            e.printStackTrace();
+            try {
+                outputStream.writeUTF(
+                        FTPStatus.message(FTPStatus.ACTION_ABORTED) + ": Error printing working directory: " + e.getMessage());
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
         }
     }
 
@@ -242,22 +239,8 @@ public abstract class AbstractFTPFunctions {
             if (targetDir.exists() && targetDir.isDirectory()) {
                 serverDirectory = targetDir.getPath();
                 // Compute the relative path as in printWorkingDirectory()
-                String baseFolder = new File(defaultDirectory).getName();
-                String basePath = new File(defaultDirectory).getCanonicalPath();
-                String currentPath = new File(serverDirectory).getCanonicalPath();
-                String relative = "";
-                if (currentPath.startsWith(basePath)) {
-                    relative = currentPath.substring(basePath.length());
-                    if (relative.startsWith(File.separator))
-                        relative = relative.substring(1);
-                }
-                String display = baseFolder;
-                if (!relative.isEmpty())
-                    display += "/" + relative;
-                if (!display.endsWith("/"))
-                    display += "/";
-                outputStream
-                        .writeUTF(FTPStatus.message(FTPStatus.FILE_ACTION_OK) + ": Changed directory to: " + display);
+                String display = displayWorkingDirectory();
+                outputStream.writeUTF(FTPStatus.message(FTPStatus.COMMAND_OK) + ": Directory changed to: " + display);
             } else {
                 outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE) + ": Invalid directory");
             }
