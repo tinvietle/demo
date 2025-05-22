@@ -207,7 +207,7 @@ public class ServerHandler implements Runnable {
                 output.writeUTF("ftp> "); // Send prompt before reading command so prompt and command appear on one line
                 String userInput = input.readUTF();
                 if (userInput == null) break;
-                System.out.println("Received: " + userInput);
+                System.out.println("Received: " + username + " type " + userInput);
                 String[] parts = userInput.split(" ");
                 message = parts[0];
 
@@ -231,7 +231,7 @@ public class ServerHandler implements Runnable {
                     case "rmdir":
                         ftp.deleteDirectory(parts);
                         break;
-                    case "move":
+                    case "mv":
                         ftp.moveFile(parts);
                         break;
                     case "pwd":
