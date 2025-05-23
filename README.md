@@ -66,4 +66,91 @@ The project is developed as part of the Computer Network 2 course at Vietnamese-
 
 ## 📥 Installation & Usage
 
+## Prerequisites 🔧
 
+Before you begin, make sure you have the following software installed and configured:
+
+* **Java Runtime Environment (JRE)** (bundled in this repository under `JRE/`)
+* **Java Development Kit (JDK) 23** (required only if you plan to build or modify the source code)
+* **IDE (optional)**: IntelliJ IDEA, Eclipse, or NetBeans (latest versions recommended)
+
+> **Tip:** If you’re using an OS without a bundled JDK 23, download it from the [official Oracle website](https://www.oracle.com/java/technologies/downloads/#jdk23).
+
+---
+
+## 📁 Project Structure
+
+```bash
+DEMO/
+├── .vscode/                
+├── JRE/                    
+├── src/main/java/com/example/
+│   ├── storage/            
+│   ├── Client.java         # FTP client implementation
+│   └── Server.java         # FTP server implementation
+├── test/                  
+├── target/                 
+├── .editorconfig           
+├── .gitignore              
+├── client.jar              
+├── client.xml              
+├── FTPClient.exe           # Windows executable for client
+├── FTPServer.exe           # Windows executable for server
+├── pom.xml                 # Maven project file
+├── README.md               # Project documentation
+├── server.jar             
+└── server.xml            
+```
+
+---
+
+## ▶️ Running the Executable Binaries
+
+1. **Open** the `DEMO/` folder in your file explorer.
+2. **Verify** the `JRE/` subfolder contains both `bin/` and `lib/` directories.
+3. **Launch**:
+
+   * Double-click `FTPServer.exe` to start the server.
+   * Double-click `FTPClient.exe` to start the client.
+4. \*\*(Optional) Set \*\*\`\` if the bundled JRE is not detected:
+
+   * Open **Edit the system environment variables** → **Environment Variables**
+   * Under **System Variables**, click **New**:
+
+     * **Variable name:** `JAVA_HOME`
+     * **Variable value:** `C:\path\to\DEMO\JRE`
+   * Click **OK** to save.
+
+---
+
+## 🧑‍💻 Running from Source
+
+1. Open your preferred IDE (e.g., VS Code, IntelliJ IDEA).
+2. **Import** the Maven project (`pom.xml`).
+3. Navigate to `src/main/java/com/example/`.
+4. Run `Server.java` first to start the server.
+5. Run `Client.java` to start the client.
+
+> **Note:** You can also build and run the JARs via Maven:
+>
+> ```bash
+> mvn clean package
+> java -jar target/server.jar --config server.xml
+> java -jar target/client.jar --config client.xml
+> ```
+
+---
+
+## 📄 Additional Notes
+
+* **Configuration:**
+
+  * `client.xml` and `server.xml` contain runtime parameters (host, port, credentials).
+* **Firewall:** Ensure your OS firewall allows inbound/outbound traffic on the configured FTP ports (default: 21).
+* **Testing:** Add or modify tests under `test/` and run with:
+
+  ```bash
+  mvn test
+  ```
+
+Happy FTP-ing! 🚀
