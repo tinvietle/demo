@@ -30,7 +30,39 @@ The project is developed as part of the Computer Network 2 course at Vietnamese-
 
 ## 🚀 Features
 
-
+- **User Authentication**
+  - Login with username and password
+  - Anonymous login with limited access
+  - MongoDB-based user credential management
+  
+- **File Operations**
+  - Upload files (put)
+  - Download files (get [FILE])
+  - List directories and files (ls)
+  - Change directories (cd [DIRECTORY])
+  - Remove files (rm [FILE])
+  - Create directories (mkdir [DIRECTORY])
+  - Remove directories (rmdir [DIRECTORY])
+  - Move files (mv [SOURCE] [DESTINATION])
+  - Print working directory (pwd)
+  - Help command for available operations (help)
+  - Quit command to exit the client (quit)
+  
+- **Connection Management**
+  - Use TCP sockets for client-server communication
+  - Handle multiple client connections using threads
+  
+- **Security Features**
+  - User and guest features separation
+  - Handle command parameters and arguments
+  
+- **Client Interface**
+  - Command-line interface for client operations
+  - Response code handling according to FTP protocol standards
+  
+- **Extensibility**
+  - Modular design for adding new commands
+  - Customizable server configurations
 
 ## 📥 Installation & Usage
 
