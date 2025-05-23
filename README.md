@@ -112,15 +112,6 @@ DEMO/
 
    * Double-click `FTPServer.exe` to start the server.
    * Double-click `FTPClient.exe` to start the client.
-4. \*\*(Optional) Set \*\*\`\` if the bundled JRE is not detected:
-
-   * Open **Edit the system environment variables** → **Environment Variables**
-   * Under **System Variables**, click **New**:
-
-     * **Variable name:** `JAVA_HOME`
-     * **Variable value:** `C:\path\to\DEMO\JRE`
-   * Click **OK** to save.
-
 ---
 
 ## 🧑‍💻 Running from Source
@@ -153,4 +144,4 @@ DEMO/
   mvn test
   ```
 
-Happy FTP-ing! 🚀
+Happy FTP-ing! 
