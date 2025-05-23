@@ -131,17 +131,3 @@ DEMO/
 > ```
 
 ---
-
-## 📄 Additional Notes
-
-* **Configuration:**
-
-  * `client.xml` and `server.xml` contain runtime parameters (host, port, credentials).
-* **Firewall:** Ensure your OS firewall allows inbound/outbound traffic on the configured FTP ports (default: 21).
-* **Testing:** Add or modify tests under `test/` and run with:
-
-  ```bash
-  mvn test
-  ```
-
-Happy FTP-ing! 
