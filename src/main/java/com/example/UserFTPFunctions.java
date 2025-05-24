@@ -14,7 +14,7 @@ public class UserFTPFunctions extends AbstractFTPFunctions {
     @Override
     public void receiveFile(String[] parts) {
         try {
-            if (!validateCommand(parts, 1, "Usage: put")){
+            if (!validateCommand(parts, 1, "Usage: put")) {
                 return;
             }
             outputStream.writeUTF("put allowed");
@@ -82,22 +82,30 @@ public class UserFTPFunctions extends AbstractFTPFunctions {
         if (!validateCommand(parts, 2, "Usage: rm [FILE]")) {
             return;
         }
-        String dirName = parts[1];
+        String filename = parts[1];
         try {
-            if (!isPathWithinAllowedDirectory(dirName)) {
+            if (!isPathWithinAllowedDirectory(filename)) {
                 outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_ACTION_NOT_TAKEN)
                         + ": Access denied - cannot delete directories outside allowed space");
                 return;
             }
 
-            File dir = new File(serverDirectory, dirName);
-            if (dir.exists() && dir.isDirectory()) {
-                deleteDirectoryRecursively(dir);
-                outputStream.writeUTF(
-                        FTPStatus.message(FTPStatus.FILE_ACTION_OK) + ": Directory deleted successfully: " + dirName);
+            File file;
+            // Check if filename is an absolute or relative path
+            if (new File(filename).isAbsolute()) {
+                file = new File("src/main/java/com/example/storage/", filename);
             } else {
-                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE)
-                        + ": Directory does not exist or is not a directory: " + dirName);
+                file = new File(serverDirectory, filename);
+            }
+
+            if (file.delete()) {
+                outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_ACTION_OK));
+            } else {
+                if (!file.exists()) {
+                    outputStream.writeUTF(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE) + ": File does not exist");
+                } else {
+                    outputStream.writeUTF(FTPStatus.message(FTPStatus.ACTION_ABORTED) + ": Failed to delete file");
+                }
             }
         } catch (IOException e) {
             e.printStackTrace();
