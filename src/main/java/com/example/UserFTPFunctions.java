@@ -12,7 +12,7 @@ public class UserFTPFunctions extends AbstractFTPFunctions {
     }
 
     @Override
-    public void receiveFile(String[] parts) {
+    public synchronized void receiveFile(String[] parts) {
         try {
             if (!validateCommand(parts, 1, "Usage: put")) {
                 return;
@@ -78,7 +78,7 @@ public class UserFTPFunctions extends AbstractFTPFunctions {
     }
 
     @Override
-    public void deleteFile(String[] parts) {
+    public synchronized void deleteFile(String[] parts) {
         if (!validateCommand(parts, 2, "Usage: rm [FILE]")) {
             return;
         }
@@ -120,7 +120,7 @@ public class UserFTPFunctions extends AbstractFTPFunctions {
 
     @Override
     // Modified createDirectory to accept the directory name as a parameter
-    public void createDirectory(String[] parts) {
+    public synchronized void createDirectory(String[] parts) {
         if (!validateCommand(parts, 2, "Usage: mkdir [DIRECTORY]")) {
             return;
         }
@@ -158,7 +158,7 @@ public class UserFTPFunctions extends AbstractFTPFunctions {
 
     @Override
     // Modified deleteDirectory to accept the directory name as a parameter
-    public void deleteDirectory(String[] parts) {
+    public synchronized void deleteDirectory(String[] parts) {
         if (!validateCommand(parts, 2, "Usage: rmdir [DIRECTORY]")) {
             return;
         }
@@ -207,7 +207,7 @@ public class UserFTPFunctions extends AbstractFTPFunctions {
 
     @Override
     // Modified moveFile to accept source and destination names as parameters
-    public void moveFile(String[] parts) {
+    public synchronized void moveFile(String[] parts) {
         if (!validateCommand(parts, 3, "Usage: mv [SOURCE] [DESTINATION]")) {
             return;
         }

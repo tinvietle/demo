@@ -214,7 +214,7 @@ public abstract class AbstractFTPFunctions {
         }
     }
 
-    public void changeDirectory(String[] parts) {
+    public synchronized void changeDirectory(String[] parts) {
         if (!validateCommand(parts, 2, "Usage: cd [DIRECTORY]")) {
             return;
         }
@@ -255,7 +255,7 @@ public abstract class AbstractFTPFunctions {
         }
     }
 
-    public void sendFile(String[] parts) {
+    public synchronized void sendFile(String[] parts) {
         if (!validateCommand(parts, 2, "Usage: get [FILE]")) {
             return;
         }
