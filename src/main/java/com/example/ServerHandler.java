@@ -1,7 +1,8 @@
 package com.example;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.BufferedReader;
+import java.io.PrintWriter;
+import java.io.InputStreamReader;
 import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
@@ -31,100 +32,105 @@ public class ServerHandler implements Runnable {
     }
 
     private Socket socket;
-    private DataInputStream input;
-    private DataOutputStream output;
+    private BufferedReader input;
+    private PrintWriter output;
     private String username;
     private String serverDirectory;
     private AbstractFTPFunctions ftp;
+    private boolean userReceived = false;
+    private String pendingUsername = null;
 
     public ServerHandler(Socket socket) {
         this.socket = socket;
         try {
-            input = new DataInputStream(socket.getInputStream());
-            output = new DataOutputStream(socket.getOutputStream());
-            username = helloClient();
-            if (username == null) return;
-            serverDirectory = "src/main/java/com/example/storage/" + username;
-
-            // 3. Create directory for the user if it doesn't exist
-            ensureUserDirectory(serverDirectory);
-
-            // 5. Initialize FTP functions based on user type
-            if (username.equalsIgnoreCase("public")) {
-                ftp = new AnonymousFTPFunctions(socket, serverDirectory);
-            } else {
-                ftp = new UserFTPFunctions(socket, serverDirectory);
-            }
+            input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            output = new PrintWriter(socket.getOutputStream(), true);
+            
+            // Send welcome message
+            output.println("220 Welcome to FTP server");
+            output.println("If you do not have a username for this system, you can log in using anonymous FTP.");
+            output.println("To do this, enter 'USER anonymous' as your username.");
+            output.println("When prompted for a password, enter 'PASS your_email@example.com'.");
             
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    private String helloClient() throws IOException {
-        while (true) {
-            output.writeUTF("If you do not have a username for this system, you can log in using anonymous FTP.");
-            output.writeUTF("To do this, enter the word 'anonymous' as your username.");
-            output.writeUTF("When prompted for a password, enter your email address. This helps the server log anonymous access.");
-            output.writeUTF("Once logged in, you'll have access to the public anonymous directory, where you can download files.");
-            output.writeUTF("Note: You will not be able to upload, delete, or modify files on the remote server as an anonymous user.");
-            output.writeUTF("Enter username:");
-            String user = input.readUTF();
-            output.writeUTF("Enter password:");
-            String pass = input.readUTF();
-
-            // 4. Check if user is anonymous   
-            if (user.equalsIgnoreCase("anonymous")) {
-                if (recordAnonymousUser(pass)) {
-                    output.writeUTF("Logged in as anonymous user.");
-                    return "public";
-                } else {
-                    output.writeUTF("Error logging in as anonymous user. Please try again later.");
-                    try {
-                        socket.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-    
-            if (authenticate(user, pass)) {
-                output.writeUTF("Authentication successful");
-                return user;
-            }
-    
-            // Invalid credentials: offer retry or signup
-            output.writeUTF(
-                "Invalid credentials. " +
-                "Type 'retry' to try again, 'signup' to create a new account, or 'quit' to exit:"
-            );
-            String choice = input.readUTF();
-            if ("quit".equalsIgnoreCase(choice)) {
-                try {
-                    socket.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                return null;
-            } else if ("signup".equalsIgnoreCase(choice)) {
-                output.writeUTF("Enter username:");
-                String newUser = input.readUTF();
-                output.writeUTF("Enter password:");
-                String newPass = input.readUTF();
-                if (createAccount(newUser, newPass)) {
-                    output.writeUTF("Account created. Please log in now.");
-                } else {
-                    output.writeUTF("Signup failed. Connection failed.");
-                    try {
-                        socket.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-            // otherwise loop to retry
+    private void handleUser(String[] args) {
+        if (args.length < 2) {
+            output.println("501 Syntax error in parameters or arguments");
+            return;
         }
-    }    
+        
+        pendingUsername = args[1];
+        userReceived = true;
+        output.println("331 User name okay, need password");
+    }
+
+    private void handlePass(String[] args) {
+        if (!userReceived || pendingUsername == null) {
+            output.println("503 Bad sequence of commands");
+            return;
+        }
+        
+        if (args.length < 2) {
+            output.println("501 Syntax error in parameters or arguments");
+            return;
+        }
+        
+        String password = args[1];
+        
+        try {
+            // Check if user is anonymous
+            if (pendingUsername.equalsIgnoreCase("anonymous")) {
+                if (recordAnonymousUser(password)) {
+                    output.println("230 Anonymous user logged in");
+                    username = "public";
+                    initializeFTP();
+                } else {
+                    output.println("530 Login failed");
+                    resetLoginState();
+                }
+                return;
+            }
+            
+            // Regular user authentication
+            if (authenticate(pendingUsername, password)) {
+                output.println("230 User logged in, proceed");
+                username = pendingUsername;
+                initializeFTP();
+            } else {
+                output.println("530 Login failed");
+                resetLoginState();
+            }
+        } catch (Exception e) {
+            output.println("530 Login failed");
+            resetLoginState();
+        }
+    }
+
+    private void resetLoginState() {
+        userReceived = false;
+        pendingUsername = null;
+        username = null;
+    }
+
+    private void initializeFTP() {
+        try {
+            serverDirectory = "src/main/java/com/example/storage/" + username;
+            ensureUserDirectory(serverDirectory);
+            
+            if (username.equalsIgnoreCase("public")) {
+                ftp = new AnonymousFTPFunctions(socket, serverDirectory);
+            } else {
+                ftp = new UserFTPFunctions(socket, serverDirectory);
+            }
+        } catch (IOException e) {
+            output.println("530 Failed to initialize user session");
+            resetLoginState();
+        }
+    }
 
     // 6. New helper method querying MongoDB
     private boolean authenticate(String user, String pass) {
@@ -170,86 +176,127 @@ public class ServerHandler implements Runnable {
         File userDir = new File(userDirPath);
 
         if (!userDir.exists() || !userDir.isDirectory()) {
-            sendMessage("Directory does not exist: " + userDirPath + " - creating new directory");
             if (userDir.mkdir()) {
-                sendMessage("Directory created successfully: " + userDirPath);
+                output.println("257 Directory created successfully: " + userDirPath);
             } else {
-                sendMessage("Failed to create directory: " + userDirPath);
+                output.println("550 Failed to create directory: " + userDirPath);
                 try {
-                    socket.close();    // now caught locally
+                    socket.close();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
                 return;
             }
-        } else {
-            sendMessage("Directory already exists: " + userDirPath);
         }
 
-        sendMessage("Welcome to the FTP server, " + username);
-        sendMessage("Type \"help\" for a list of available commands.");
-
+        output.println("220 Welcome to the FTP server, " + username);
+        output.println("214 Type \"help\" for a list of available commands.");
     }
+
     private void sendMessage(String message) {
-        try {
-            output.writeUTF(message);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }        }
+        output.println(message);
+    }
 
     @Override
     public void run() {
         try {
             String message;
-            // Removed the initial prompt from helloClient; now sending prompt in each iteration
             while (true) {
                 if (socket.isClosed()) break;
-                output.writeUTF("ftp> "); // Send prompt before reading command so prompt and command appear on one line
-                String userInput = input.readUTF();
+                
+                String userInput = input.readLine();
                 if (userInput == null) break;
-                System.out.println("Received: " + username + " type " + userInput);
+                
+                System.out.println("Received: " + userInput);
                 String[] parts = userInput.split(" ");
-                message = parts[0];
+                if (parts.length == 0) continue;
+                
+                message = parts[0].toUpperCase();
 
-                // Handle commands
+                // Handle authentication commands first
                 switch (message) {
-                    case "put":
-                        ftp.receiveFile(parts);
-                        break;
-                    case "get":
-                        ftp.sendFile(parts);
-                        break;
-                    case "ls":
-                        ftp.listFiles(parts);
-                        break;
-                    case "rm":
-                        ftp.deleteFile(parts);
-                        break;
-                    case "mkdir":
-                        ftp.createDirectory(parts);
-                        break;
-                    case "rmdir":
-                        ftp.deleteDirectory(parts);
-                        break;
-                    case "mv":
-                        ftp.moveFile(parts);
-                        break;
-                    case "pwd":
-                        ftp.printWorkingDirectory(parts);
-                        break;
-                    case "help":
-                        ftp.showHelp(parts);
-                        break;
-                    case "cd":
-                        ftp.changeDirectory(parts);
-                        break;
-                    case "quit":
-                        output.writeUTF("221 Service closing control connection"); 
+                    case "USER":
+                        handleUser(parts);
+                        continue;
+                    case "PASS":
+                        handlePass(parts);
+                        continue;
+                    case "QUIT":
+                        output.println("221 Service closing control connection");
                         System.out.println("Client disconnected");
                         socket.close();
                         return;
+                }
+
+                // Check if user is logged in for other commands
+                if (username == null || ftp == null) {
+                    output.println("530 Please login with USER and PASS");
+                    continue;
+                }
+
+                // Handle FTP commands with standard names
+                switch (message) {
+                    case "STOR":
+                        ftp.receiveFile(parts);
+                        break;
+                    case "RETR":
+                        ftp.sendFile(parts);
+                        break;
+                    case "LIST":
+                    case "NLST":
+                        ftp.listFiles(parts);
+                        break;
+                    case "DELE":
+                        ftp.deleteFile(parts);
+                        break;
+                    case "MKD":
+                    case "XMKD":
+                        ftp.createDirectory(parts);
+                        break;
+                    case "RMD":
+                    case "XRMD":
+                        ftp.deleteDirectory(parts);
+                        break;
+                    case "RNFR":
+                        ftp.moveFile(parts);
+                        break;
+                    case "PWD":
+                    case "XPWD":
+                        ftp.printWorkingDirectory(parts);
+                        break;
+                    case "HELP":
+                        ftp.showHelp(parts);
+                        break;
+                    case "CWD":
+                        ftp.changeDirectory(parts);
+                        break;
+                    case "PASV":
+                        handlePasv();
+                        break;
+                    case "EPSV":
+                        handleEpsv();
+                        break;
+                    case "SYST":
+                        output.println("215 UNIX Type: L8");
+                        break;
+                    case "FEAT":
+                        output.println("211-Features:");
+                        output.println(" MDTM");
+                        output.println(" SIZE");
+                        output.println("211 End");
+                        break;
+                    case "TYPE":
+                        if (parts.length > 1) {
+                            output.println("200 Type set to " + parts[1]);
+                        } else {
+                            output.println("501 Syntax error in parameters");
+                        }
+                        break;
+                    case "NOOP":
+                        output.println("200 NOOP command successful");
+                        break;
                     default:
-                        output.writeUTF("Unknown command. Type 'help' for a list of commands.");
+                        output.println("502 Command not implemented: " + message);
                 }
             }
         } catch (IOException e) {
@@ -262,4 +309,21 @@ public class ServerHandler implements Runnable {
             }
         }
     }
+
+    private void handlePasv() {
+        String myIp = "127.0.0.1";
+        String[] myIpSplit = myIp.split("\\.");
+        int dataPort = 20;
+        int p1 = dataPort / 256;
+        int p2 = dataPort % 256;
+
+        output.println("227 Entering Passive Mode (" + myIpSplit[0] + "," + myIpSplit[1] + "," + myIpSplit[2] + "," + myIpSplit[3] + "," + p1 + "," + p2 + ")");
+    }
+
+    private void handleEpsv() {
+        int dataPort = 20;
+        output.println("229 Entering Extended Passive Mode (|||" + dataPort + "|)");
+    }
+
+    // ...existing methods...
 }

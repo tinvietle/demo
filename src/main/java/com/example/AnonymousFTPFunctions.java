@@ -36,18 +36,10 @@ public class AnonymousFTPFunctions extends AbstractFTPFunctions {
 
     @Override
     public void showHelp(String[] parts) {
-        try {
-            outputStream.writeUTF("Anonymous user has limited permissions. Available commands: get [FILE], ls, cd [DIRECTORY], pwd, help, quit");
-        } catch (IOException e) {
-            handleException(e);
-        }
+        outputWriter.println("Anonymous user has limited permissions. Available commands: RETR [FILE], LIST, CWD [DIRECTORY], PWD, HELP, QUIT");
     }
 
     private void deny(String action) {
-        try {
-            outputStream.writeUTF("Permission denied: Anonymous user cannot perform: " + action);
-        } catch (IOException e) {
-            handleException(e);
-        }
+        outputWriter.println("Permission denied: Anonymous user cannot perform: " + action);
     }
 }

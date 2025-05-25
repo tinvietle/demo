@@ -1,28 +1,30 @@
 package com.example;
 
+import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.Socket;
-
 
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 
 public class ClientHandler {
     private Socket socket;
-    private DataInputStream inputStream;
-    private DataOutputStream outputStream;
+    private BufferedReader inputReader;
+    private DataInputStream dataInputStream;
+    private DataOutputStream dataOutputStream;
 
     public ClientHandler(Socket socket) {
-        // Constructor implementation
         this.socket = socket;
         try {
-            this.inputStream = new DataInputStream(socket.getInputStream());
-            this.outputStream = new DataOutputStream(socket.getOutputStream());
+            this.inputReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            this.dataInputStream = new DataInputStream(socket.getInputStream());
+            this.dataOutputStream = new DataOutputStream(socket.getOutputStream());
         } catch (IOException e) {
             System.out.println("Error initializing streams: " + e.getMessage());
         }
@@ -60,15 +62,15 @@ public class ClientHandler {
     public void uploadFile(File file) {
         // Send file name and size
         try {
-            outputStream.writeUTF(file.getName());
-            outputStream.writeLong(file.length());
+            dataOutputStream.writeUTF(file.getName());
+            dataOutputStream.writeLong(file.length());
 
             // Send file data
             byte[] buffer = new byte[4096];
             int bytesRead;
             try (FileInputStream fis = new java.io.FileInputStream(file)) {
                 while ((bytesRead = fis.read(buffer)) != -1) {
-                    outputStream.write(buffer, 0, bytesRead);
+                    dataOutputStream.write(buffer, 0, bytesRead);
                 }
             }
         } catch (IOException e) {
@@ -79,8 +81,8 @@ public class ClientHandler {
 
     public void receiveFile() {
         try {
-            String fileName = inputStream.readUTF();
-            long fileSize = inputStream.readLong();
+            String fileName = dataInputStream.readUTF();
+            long fileSize = dataInputStream.readLong();
 
             // Get current directory path
             String currentDir = System.getProperty("user.dir");
@@ -90,14 +92,14 @@ public class ClientHandler {
                 int bytesRead;
                 long totalBytesRead = 0;
 
-                while (totalBytesRead < fileSize && (bytesRead = inputStream.read(buffer)) != -1) {
+                while (totalBytesRead < fileSize && (bytesRead = dataInputStream.read(buffer)) != -1) {
                     fos.write(buffer, 0, bytesRead);
                     totalBytesRead += bytesRead;
                 }
             }
 
             // Send confirmation to server
-            outputStream.writeUTF("File received successfully: " + fileName);
+            dataOutputStream.writeUTF("File received successfully: " + fileName);
             System.out.println("File received successfully: " + fileName);
 
         } catch (IOException e) {

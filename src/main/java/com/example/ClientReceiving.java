@@ -1,6 +1,7 @@
 package com.example;
 
-import java.io.DataInputStream;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.io.IOException;
 import java.net.Socket;
 
@@ -12,13 +13,14 @@ public class ClientReceiving implements Runnable {
     }
 
     public void run() {
-        DataInputStream nhan;
+        BufferedReader nhan;
         ClientHandler clientHandler = new ClientHandler(s);
         try {
-            nhan = new DataInputStream(s.getInputStream());
+            nhan = new BufferedReader(new InputStreamReader(s.getInputStream()));
             while (true) {
-
-                String tam = nhan.readUTF();
+                String tam = nhan.readLine();
+                if (tam == null) break;
+                
                 switch (tam) {
                     case "ftp> ":
                         System.out.print("ftp> ");
@@ -40,12 +42,9 @@ public class ClientReceiving implements Runnable {
                     System.out.println("221 Server closed connection");
                     break;
                 }
-
-
             }
         } catch (IOException ex) {
 
         }
-
     }
 }
