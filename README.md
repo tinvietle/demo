@@ -66,7 +66,7 @@ The project is developed as part of the Computer Network 2 course at Vietnamese-
 
 ## 📥 Installation & Usage
 
-## Prerequisites 🔧
+### Prerequisites 🔧
 
 Before you begin, make sure you have the following software installed and configured:
 
@@ -78,7 +78,7 @@ Before you begin, make sure you have the following software installed and config
 
 ---
 
-## 📁 Project Structure
+### 📁 Project Structure
 
 ```bash
 demo/
@@ -111,7 +111,7 @@ demo/
 
 ---
 
-## ▶️ Running the Executable Binaries
+### ▶️ Running the Executable Binaries
 
 1. **Open** the `DEMO/` folder in your file explorer.
 2. **Verify** the `JRE/` subfolder contains both `bin/` and `lib/` directories.
@@ -121,7 +121,7 @@ demo/
    * Double-click `FTPClient.exe` to start the client.
 ---
 
-## 🧑‍💻 Running from Source
+### 🧑‍💻 Running from Source
 
 1. Open your preferred IDE (e.g., VS Code, IntelliJ IDEA).
 2. **Import** the Maven project (`pom.xml`).
