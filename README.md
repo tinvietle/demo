@@ -81,21 +81,28 @@ Before you begin, make sure you have the following software installed and config
 ## 📁 Project Structure
 
 ```bash
-DEMO/
+demo/
 ├── .vscode/                
 ├── JRE/                    
 ├── src/main/java/com/example/
-│   ├── storage/            
-│   ├── Client.java         # FTP client implementation
-│   └── Server.java         # FTP server implementation
+│   ├── storage/                     # Holds server-side storage (directories and files)
+│   ├── AbstractFTPFunctions.java    # Abstract class defining common FTP commands and utility methods for unauthenticated and authenticated users
+│   ├── AnonymousFTPFunctions.java   # FTP command implementations available to unauthenticated (anonymous) users
+│   ├── Client.java                  # FTP client implementations: Start new FTP connections with the server
+│   ├── ClientHandler.java           # Handles reading server replies and dispatching client-side actions
+│   ├── ClientReceiving.java         # Handles incoming messages from the server on the client side
+│   ├── ClientSending.java           # Handles outcoming messages to the server on the client side
+│   ├── Server.java                  # FTP server implementations: Starts the FTP server, listens for new client connections
+│   ├── ServerHandler.java           # Handles an individual client session: authentication, command parsing, and response
+│   └── UserFTPFunctions.java        # FTP command implementations for authenticated users
 ├── test/                  
 ├── target/                 
 ├── .editorconfig           
 ├── .gitignore              
 ├── client.jar              
 ├── client.xml              
-├── FTPClient.exe           # Windows executable for client
-├── FTPServer.exe           # Windows executable for server
+├── FTPClient.exe           # Windows executable file for client
+├── FTPServer.exe           # Windows executable file for server
 ├── pom.xml                 # Maven project file
 ├── README.md               # Project documentation
 ├── server.jar             
