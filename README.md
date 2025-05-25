@@ -113,7 +113,7 @@ The project is developed as part of the Computer Network 2 course at Vietnamese-
 
 Before you begin, make sure you have the following software installed and configured:
 
-* **Java Runtime Environment (JRE)** (bundled in this repository under `JRE/`)
+* **Java Runtime Environment (JRE)** (bundled in this repository under `demo/JRE/`)
 * **Java Development Kit (JDK) 23** (required only if you plan to build or modify the source code)
 * **IDE (optional)**: IntelliJ IDEA, Eclipse, or NetBeans (latest versions recommended)
 
