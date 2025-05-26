@@ -64,10 +64,10 @@ public class ServerHandler implements Runnable {
     }
 
     private void sendWelcomeMessage() {
-        output.println("220 Welcome to FTP server");
+        output.println("220-Welcome to FTP server");
         output.println("If you do not have a username for this system, you can log in using anonymous FTP.");
         output.println("To do this, enter 'USER anonymous' as your username.");
-        output.println("When prompted for a password, enter 'PASS your_email@example.com'.");
+        output.println("220 When prompted for a password, enter 'PASS your_email@example.com'.");
     }
 
     // ===============================
@@ -197,12 +197,12 @@ public class ServerHandler implements Runnable {
             }
         }
 
-        output.println("220 Welcome to the FTP server, " + username);
-        output.println("214 Type \"help\" for a list of available commands.");
+        // output.println("220 Welcome to the FTP server, " + username);
+        // output.println("214-Type \"help\" for a list of available commands.");
     }
 
     private void handlePasv() {
-        String myIp = "127.0.0.1";
+        String myIp = "172.0.0.1";
         String[] myIpSplit = myIp.split("\\.");
         int dataPort = 20;
         int p1 = dataPort / 256;
