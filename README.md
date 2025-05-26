@@ -151,24 +151,27 @@ demo/
 ├── server.jar             
 └── server.xml            
 ```
-
 ---
 
 ### ▶️ Running the Executable Binaries
 
-1. **Make sure** the executable files are in `demo/` folder.
-2. **Verify** the `JRE/` subfolder contains both `bin/` and `lib/` directories.
-3. **Launch**:
-
+1. **Ensure Executables Are in Place**
+   Make sure the `demo/` folder contains the following files:
+   * `FTPServer.exe`
+   * `FTPClient.exe`
+2. **Verify JRE Structure**
+   Check that the `JRE/` subfolder exists and includes both:
+   * `JRE/bin/`
+   * `JRE/lib/`
+3. **Launch the Applications**
    * Double-click `FTPServer.exe` to start the server.
    * Double-click `FTPClient.exe` to start the client.
-   * 
-4. **Verify Java Path (Optional):**
-   - If the game doesn't detect the included JRE, set the Java path manually:
-     - Open **"Edit the system environment variables"** and click **Environment Variables**.
-     - Under **System Variables**, click **New**, and add:
-       - Variable Name: `JAVA_HOME`
-       - Variable Value: Path to `JRE` folder.
+4. **Optional – Set Up Java Manually**
+   If the `JRE/` folder is missing or incomplete:
+   * Download JDK version 23.
+   * Copy **all contents** of the JDK (especially the `bin/` and `lib/` folders).
+   * Paste them into a new `JRE/` folder inside the project directory.
+
 ---
 
 ### 🧑‍💻 Running from Command Line
