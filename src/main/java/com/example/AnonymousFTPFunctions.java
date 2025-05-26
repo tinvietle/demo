@@ -5,10 +5,18 @@ import java.net.Socket;
 
 public class AnonymousFTPFunctions extends AbstractFTPFunctions {
 
+    // ===============================
+    // CONSTRUCTOR
+    // ===============================
+    
     public AnonymousFTPFunctions(Socket socket, String serverDirectory) throws IOException {
         super(socket, serverDirectory);
     }
 
+    // ===============================
+    // DENIED OPERATIONS
+    // ===============================
+    
     @Override
     public void receiveFile(String[] parts) {
         deny("Uploading files");
@@ -30,11 +38,6 @@ public class AnonymousFTPFunctions extends AbstractFTPFunctions {
     }
 
     @Override
-    public void showHelp(String[] parts) {
-        outputWriter.println("Anonymous user has limited permissions. Available commands: RETR [FILE], LIST, CWD [DIRECTORY], PWD, HELP, QUIT");
-    }
-
-    @Override
     public void handleRenameFrom(String[] parts) {
         deny("Renaming files");
     }
@@ -44,7 +47,17 @@ public class AnonymousFTPFunctions extends AbstractFTPFunctions {
         deny("Renaming files");
     }
 
+    // ===============================
+    // UTILITY METHODS
+    // ===============================
+    
     private void deny(String action) {
         outputWriter.println("Permission denied: Anonymous user cannot perform: " + action);
+    }
+
+    @Override
+    public void showHelp(String[] parts) {
+        outputWriter.println("Anonymous user has limited permissions. Available commands: " +
+                           "RETR [FILE], LIST, CWD [DIRECTORY], PWD, HELP, QUIT");
     }
 }

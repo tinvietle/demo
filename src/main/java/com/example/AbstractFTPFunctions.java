@@ -1,24 +1,31 @@
 package com.example;
 
-import java.io.BufferedReader;
-import java.io.PrintWriter;
-import java.io.InputStreamReader;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.FileReader;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.IOException;
-import java.net.Socket;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.net.ServerSocket;
+import java.net.Socket;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public abstract class AbstractFTPFunctions {
+    
+    // ===============================
+    // FIELDS
+    // ===============================
+    
+    // Connection fields
     protected Socket socket;
     protected PrintWriter outputWriter;
     protected BufferedReader inputReader;
+    
+    // Directory fields
     protected String defaultDirectory;
     protected String serverDirectory;
     
@@ -34,7 +41,7 @@ public abstract class AbstractFTPFunctions {
     protected boolean isPassiveMode = true;
     private boolean debugMode = true;
     
-    // Transfer mode enum
+    // Transfer mode enum and state
     protected enum TransferType {
         ASCII, BINARY
     }
@@ -43,72 +50,10 @@ public abstract class AbstractFTPFunctions {
     // Rename operation state
     protected String pendingRenameSource = null;
 
-    public static class FTPStatus {
-        public static final int COMMAND_OK = 200;
-        public static final int SERVICE_READY = 220;
-        public static final int CLOSING_DATA = 226;
-        public static final int USER_LOGGED_IN = 230;
-        public static final int FILE_ACTION_OK = 250;
-        public static final int USERNAME_OK = 331;
-        public static final int CANT_OPEN_DATA = 425;
-        public static final int FILE_ACTION_NOT_TAKEN = 450;
-        public static final int ACTION_ABORTED = 451;
-        public static final int INSUFFICIENT_STORAGE = 452;
-        public static final int NOT_LOGGED_IN = 530;
-        public static final int FILE_UNAVAILABLE = 550;
-        public static final int SYNTAX_ERROR = 500;
-        public static final int ACTION_NOT_IMPLEMENTED = 502;
-        public static final int BAD_SEQUENCE = 503;
-        public static final int PARAMETER_NOT_IMPLEMENTED = 504;
-
-        public static String message(int code) {
-            switch (code) {
-                case COMMAND_OK:
-                    return "200 Command okay";
-                case SERVICE_READY:
-                    return "220 Service ready for new user";
-                case CLOSING_DATA:
-                    return "226 Closing data connection";
-                case USER_LOGGED_IN:
-                    return "230 User logged in, proceed";
-                case FILE_ACTION_OK:
-                    return "250 Requested file action okay, completed";
-                case USERNAME_OK:
-                    return "331 User name okay, need password";
-                case CANT_OPEN_DATA:
-                    return "425 Can't open data connection";
-                case FILE_ACTION_NOT_TAKEN:
-                    return "450 Requested file action not taken";
-                case ACTION_ABORTED:
-                    return "451 Requested action aborted";
-                case INSUFFICIENT_STORAGE:
-                    return "452 Insufficient storage";
-                case NOT_LOGGED_IN:
-                    return "530 Not logged in";
-                case FILE_UNAVAILABLE:
-                    return "550 Requested action not taken. File unavailable";
-                case SYNTAX_ERROR:
-                    return "500 Syntax error, command unrecognized";
-                case ACTION_NOT_IMPLEMENTED:
-                    return "502 Command not implemented";
-                case BAD_SEQUENCE:
-                    return "503 Bad sequence of commands";
-                case PARAMETER_NOT_IMPLEMENTED:
-                    return "504 Command not implemented for that parameter";
-                default:
-                    return code + " Unknown Status Code";
-            }
-        }
-    }
-
-    protected boolean validateCommand(String[] parts, int expectedLength, String usage) {
-        if (parts.length != expectedLength) {
-            outputWriter.println(FTPStatus.message(FTPStatus.SYNTAX_ERROR) + ": " + usage);
-            return false;
-        }
-        return true;
-    }
-
+    // ===============================
+    // CONSTRUCTOR
+    // ===============================
+    
     public AbstractFTPFunctions(Socket socket, String serverDirectory) {
         this.socket = socket;
         this.serverDirectory = serverDirectory;
@@ -122,32 +67,46 @@ public abstract class AbstractFTPFunctions {
         }
     }
 
+    // ===============================
+    // UTILITY METHODS
+    // ===============================
+    
+    protected boolean validateCommand(String[] parts, int expectedLength, String usage) {
+        if (parts.length != expectedLength) {
+            outputWriter.println("500 Syntax error, command unrecognized: " + usage);
+            return false;
+        }
+        return true;
+    }
+
     private void debugOutput(String msg) {
         if (debugMode) {
-        System.out.println("Thread " + ": " + msg);
+            System.out.println("Thread " + ": " + msg);
         }
     }
-    /**
-     * Open a new data connection socket and wait for new incoming connection from client.
-     */
+
     private void sendMsgToClient(String msg) {
         outputWriter.println(msg);
     }
 
-    /**
-     * Send a message to the connected client over the data connection.
-     * 
-     * @param msg Message to be sent
-     */
     private void sendDataMsgToClient(String msg) {
         if (dataConnection == null || dataConnection.isClosed()) {
-        sendMsgToClient("425 No data connection was established");
-        debugOutput("Cannot send message, because no data connection is established");
+            sendMsgToClient("425 No data connection was established");
+            debugOutput("Cannot send message, because no data connection is established");
         } else {
-        dataOutWriter.print(msg + '\r' + '\n');
+            dataOutWriter.print(msg + '\r' + '\n');
         }
-
     }
+
+    protected void handleException(IOException e) {
+        e.printStackTrace();
+        outputWriter.println("Error: " + e.getMessage());
+    }
+
+    // ===============================
+    // DATA CONNECTION METHODS
+    // ===============================
+    
     protected void openDataConnectionPassive(int port) {
         try {
             dataSocket = new ServerSocket(port);
@@ -160,9 +119,6 @@ public abstract class AbstractFTPFunctions {
         }
     }
 
-    /**
-     * Connect to client socket for data connection. Used for active mode.
-     */
     protected void openDataConnectionActive(String ipAddress, int port) {
         try {
             dataConnection = new Socket(ipAddress, port);
@@ -173,18 +129,13 @@ public abstract class AbstractFTPFunctions {
             e.printStackTrace();
         }
     }
-    /**
-     * Set client data connection parameters for active mode
-     */
+
     protected void setClientDataConnection(String ipAddress, int port) {
         this.clientDataIP = ipAddress;
         this.clientDataPort = port;
         this.isPassiveMode = false;
     }
 
-    /**
-     * Close previously established data connection sockets and streams
-     */
     protected void closeDataConnection() {
         try {
             if (dataOutWriter != null) {
@@ -206,55 +157,60 @@ public abstract class AbstractFTPFunctions {
         dataSocket = null;
     }
 
+    // ===============================
+    // PROTOCOL COMMAND HANDLERS
+    // ===============================
+    
     public void handlePort(String[] parts) {
+        String args = parts[1];
+        String[] stringSplit = args.split(",");
+        String hostName = stringSplit[0] + "." + stringSplit[1] + "." + 
+                         stringSplit[2] + "." + stringSplit[3];
 
-    String args = parts[1];
-    // Extract IP address and port number from arguments
-    String[] stringSplit = args.split(",");
-    String hostName = stringSplit[0] + "." + stringSplit[1] + "." + stringSplit[2] + "." + stringSplit[3];
+        int p = Integer.parseInt(stringSplit[4]) * 256 + Integer.parseInt(stringSplit[5]);
 
-    int p = Integer.parseInt(stringSplit[4]) * 256 + Integer.parseInt(stringSplit[5]);
-
-    // Initiate data connection to client
-    openDataConnectionActive(hostName, p);
-    sendMsgToClient("200 Command OK");
-  }
-
-  /**
-   * Handler for the EPORT command. The client issues an EPORT command to the
-   * server in active mode, so the server can open a data connection to the client
-   * through the given address and port number.
-   * 
-   * @param args This string is separated by vertical bars and encodes the IP
-   *             version, the IP address and the port number
-   */
-  public void handleEPort(String[] parts) {
-    String args = parts[1];
-    final String IPV4 = "1";
-    final String IPV6 = "2";
-
-    // Example arg: |2|::1|58770| or |1|132.235.1.2|6275|
-    String[] splitArgs = args.split("\\|");
-    String ipVersion = splitArgs[1];
-    String ipAddress = splitArgs[2];
-
-    System.out.println("IP Version: " + ipVersion);
-    System.out.println("IP Address: " + ipAddress);
-
-    System.out.println(IPV4.equals(ipVersion) + " " + IPV6.equals(ipVersion));
-
-    if (!IPV4.equals(ipVersion) && !IPV6.equals(ipVersion)) {
-      throw new IllegalArgumentException("Unsupported IP version");
+        openDataConnectionActive(hostName, p);
+        sendMsgToClient("200 Command OK");
     }
 
-    int port = Integer.parseInt(splitArgs[3]);
+    public void handleEPort(String[] parts) {
+        String args = parts[1];
+        final String IPV4 = "1";
+        final String IPV6 = "2";
 
-    // Initiate data connection to client
-    openDataConnectionActive(ipAddress, port);
-    sendMsgToClient("200 Command OK");
+        String[] splitArgs = args.split("\\|");
+        String ipVersion = splitArgs[1];
+        String ipAddress = splitArgs[2];
 
-  }
+        System.out.println("IP Version: " + ipVersion);
+        System.out.println("IP Address: " + ipAddress);
 
+        if (!IPV4.equals(ipVersion) && !IPV6.equals(ipVersion)) {
+            throw new IllegalArgumentException("Unsupported IP version");
+        }
+
+        int port = Integer.parseInt(splitArgs[3]);
+        openDataConnectionActive(ipAddress, port);
+        sendMsgToClient("200 Command OK");
+    }
+
+    public void handleType(String[] parts) {
+        String mode = parts[1];
+        if (mode.toUpperCase().equals("A")) {
+            transferMode = TransferType.ASCII;
+            sendMsgToClient("200 OK");
+        } else if (mode.toUpperCase().equals("I")) {
+            transferMode = TransferType.BINARY;
+            sendMsgToClient("200 OK");
+        } else {
+            sendMsgToClient("504 Not OK");
+        }
+    }
+
+    // ===============================
+    // PATH VALIDATION METHODS
+    // ===============================
+    
     public static String getCommonBasePath(String path1, String path2) {
         Path p1 = Paths.get(path1).normalize();
         Path p2 = Paths.get(path2).normalize();
@@ -276,8 +232,8 @@ public abstract class AbstractFTPFunctions {
     protected boolean isPathWithinAllowedDirectory(String path) {
         try {
             File baseDir = new File(defaultDirectory).getCanonicalFile();
-            // Check if the path is absolute or relative
             File targetPath;
+            
             if (new File(path).isAbsolute()) {
                 targetPath = new File("src/main/java/com/example/storage/", path);
             } else {
@@ -285,7 +241,8 @@ public abstract class AbstractFTPFunctions {
             }
             targetPath = targetPath.getCanonicalFile();
 
-            String commonBase = getCommonBasePath(baseDir.getCanonicalPath(), targetPath.getCanonicalPath());
+            String commonBase = getCommonBasePath(baseDir.getCanonicalPath(), 
+                                                targetPath.getCanonicalPath());
             return (commonBase.equals(baseDir.getCanonicalPath()));
         } catch (IOException e) {
             e.printStackTrace();
@@ -293,40 +250,9 @@ public abstract class AbstractFTPFunctions {
         }
     }
 
-    public void listFiles(String[] parts) {
-        if (!validateCommand(parts, 1, "Usage: LIST")) {
-            return;
-        }
-        System.out.println("Listing files...");
-        try {
-            File directory = new File(serverDirectory);
-
-            File canonicalDir = directory.getCanonicalFile();
-            File canonicalBase = new File(defaultDirectory).getCanonicalFile();
-            if (!canonicalDir.getPath().startsWith(canonicalBase.getPath())) {
-                outputWriter.println(FTPStatus.message(FTPStatus.FILE_ACTION_NOT_TAKEN) + ": Access denied");
-                return;
-            }
-
-            String[] files = directory.list();
-            if (files != null) {
-                sendMsgToClient("125 Opening ASCII mode data connection for file list.");
-                for (String file : files) {
-                    sendDataMsgToClient(file);
-                }
-                if (files.length == 0) {
-                    outputWriter.println(FTPStatus.message(FTPStatus.COMMAND_OK) + ": Directory is empty");
-                }
-            } else {
-                outputWriter.println(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE) + ": Directory cannot be read");
-            }
-            sendMsgToClient("226 Transfer complete.");
-            closeDataConnection();
-        } catch (IOException e) {
-            e.printStackTrace();
-            outputWriter.println(FTPStatus.message(FTPStatus.ACTION_ABORTED) + ": Error listing files: " + e.getMessage());
-        }
-    }
+    // ===============================
+    // DIRECTORY OPERATIONS
+    // ===============================
     
     public String displayWorkingDirectory() {
         try {
@@ -334,15 +260,19 @@ public abstract class AbstractFTPFunctions {
             String basePath = new File(defaultDirectory).getCanonicalPath();
             String currentPath = new File(serverDirectory).getCanonicalPath();
             String relative = "";
+            
             if (currentPath.startsWith(basePath)) {
                 relative = currentPath.substring(basePath.length());
-                if (relative.startsWith(File.separator))
+                if (relative.startsWith(File.separator)) {
                     relative = relative.substring(1);
+                }
             }
+            
             String display = "/" + baseFolder;
-            if (!relative.isEmpty())
+            if (!relative.isEmpty()) {
                 display += "/" + relative;
-            // Change backslashes to forward slashes before returning
+            }
+            
             return display.replace("\\", "/");
         } catch (IOException e) {
             e.printStackTrace();
@@ -355,7 +285,7 @@ public abstract class AbstractFTPFunctions {
             return;
         }
         String display = displayWorkingDirectory();
-        outputWriter.println(FTPStatus.message(FTPStatus.COMMAND_OK) + ": Current directory: " + display);
+        outputWriter.println("200 Command okay: Current directory: " + display);
     }
 
     public synchronized void changeDirectory(String[] parts) {
@@ -375,46 +305,87 @@ public abstract class AbstractFTPFunctions {
             }
 
             targetDir = targetDir.getCanonicalFile();
+            
             if (!isPathWithinAllowedDirectory(newDirectory)) {
-                outputWriter.println(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE) + ": Access denied - unable to change directory.");
+                outputWriter.println("550 Requested action not taken. File unavailable: " +
+                                   "Access denied - unable to change directory.");
                 return;
             }
+            
             if (targetDir.exists() && targetDir.isDirectory()) {
                 serverDirectory = targetDir.getPath();
                 String display = displayWorkingDirectory();
-                outputWriter.println(FTPStatus.message(FTPStatus.COMMAND_OK) + ": Directory changed to: " + display);
+                outputWriter.println("200 Command okay: Directory changed to: " + display);
             } else {
-                outputWriter.println(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE) + ": Invalid directory");
+                outputWriter.println("550 Requested action not taken. File unavailable: " +
+                                   "Invalid directory");
             }
         } catch (IOException e) {
             e.printStackTrace();
-            outputWriter.println(FTPStatus.message(FTPStatus.ACTION_ABORTED) + ": Error changing directory - " + e.getMessage());
+            outputWriter.println("451 Requested action aborted: Error changing directory - " + 
+                               e.getMessage());
         }
     }
 
-    public void handleType(String[] parts) {
-        String mode = parts[1];
-        if (mode.toUpperCase().equals("A")) {
-        transferMode = TransferType.ASCII;
-        sendMsgToClient("200 OK");
-        } else if (mode.toUpperCase().equals("I")) {
-        transferMode = TransferType.BINARY;
-        sendMsgToClient("200 OK");
-        } else
-        sendMsgToClient("504 Not OK");
-        ;
+    // ===============================
+    // FILE LISTING
+    // ===============================
+    
+    public void listFiles(String[] parts) {
+        if (!validateCommand(parts, 1, "Usage: LIST")) {
+            return;
+        }
+        
+        System.out.println("Listing files...");
+        
+        try {
+            File directory = new File(serverDirectory);
+            File canonicalDir = directory.getCanonicalFile();
+            File canonicalBase = new File(defaultDirectory).getCanonicalFile();
+            
+            if (!canonicalDir.getPath().startsWith(canonicalBase.getPath())) {
+                outputWriter.println("450 Requested file action not taken: Access denied");
+                return;
+            }
 
+            String[] files = directory.list();
+            if (files != null) {
+                sendMsgToClient("125 Opening ASCII mode data connection for file list.");
+                for (String file : files) {
+                    sendDataMsgToClient(file);
+                }
+                if (files.length == 0) {
+                    outputWriter.println("200 Command okay: Directory is empty");
+                }
+            } else {
+                outputWriter.println("550 Requested action not taken. File unavailable: " +
+                                   "Directory cannot be read");
+            }
+            
+            sendMsgToClient("226 Transfer complete.");
+            closeDataConnection();
+        } catch (IOException e) {
+            e.printStackTrace();
+            outputWriter.println("451 Requested action aborted: Error listing files: " + 
+                               e.getMessage());
+        }
     }
 
+    // ===============================
+    // FILE TRANSFER - DOWNLOAD
+    // ===============================
+    
     public synchronized void sendFile(String[] parts) {
         if (!validateCommand(parts, 2, "Usage: RETR [FILE]")) {
             return;
         }
         
         String filePath = parts[1];
+        
         try {
             if (!isPathWithinAllowedDirectory(filePath)) {
-                outputWriter.println(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE) + ": Access denied - cannot access files outside allowed space");
+                outputWriter.println("550 Requested action not taken. File unavailable: " +
+                                   "Access denied - cannot access files outside allowed space");
                 return;
             }
 
@@ -430,100 +401,100 @@ public abstract class AbstractFTPFunctions {
                 return;
             }
 
-            // Binary mode transfer
             if (transferMode == TransferType.BINARY) {
-                BufferedOutputStream fout = null;
-                BufferedInputStream fin = null;
-
-                outputWriter.println("150 Opening binary mode data connection for requested file " + file.getName());
-
-                try {
-                    fout = new BufferedOutputStream(dataConnection.getOutputStream());
-                    fin = new BufferedInputStream(new FileInputStream(file));
-
-                    System.out.println("Starting file transmission of " + file.getName());
-
-                    byte[] buffer = new byte[1024];
-                    int bytesRead;
-                    while ((bytesRead = fin.read(buffer, 0, 1024)) != -1) {
-                        fout.write(buffer, 0, bytesRead);
-                    }
-                    fout.flush();
-
-                    System.out.println("Completed file transmission of " + file.getName());
-                    outputWriter.println("226 File transfer successful. Closing data connection.");
-
-                } catch (IOException e) {
-                    System.out.println("Could not read from or write to file streams");
-                    e.printStackTrace();
-                    outputWriter.println("426 Transfer aborted");
-                } finally {
-                    try {
-                        if (fin != null) fin.close();
-                        if (fout != null) fout.close();
-                    } catch (IOException e) {
-                        System.out.println("Could not close file streams");
-                        e.printStackTrace();
-                    }
-                }
-            }
-            // ASCII mode transfer
-            else {
-                outputWriter.println("150 Opening ASCII mode data connection for requested file " + file.getName());
-
-                BufferedReader rin = null;
-                PrintWriter rout = null;
-
-                try {
-                    rin = new BufferedReader(new FileReader(file));
-                    rout = new PrintWriter(dataConnection.getOutputStream(), true);
-
-                    String line;
-                    while ((line = rin.readLine()) != null) {
-                        rout.println(line);
-                    }
-
-                    outputWriter.println("226 File transfer successful. Closing data connection.");
-                } catch (IOException e) {
-                    System.out.println("Could not read from or write to file streams");
-                    e.printStackTrace();
-                    outputWriter.println("426 Transfer aborted");
-                } finally {
-                    try {
-                        if (rout != null) rout.close();
-                        if (rin != null) rin.close();
-                    } catch (IOException e) {
-                        System.out.println("Could not close file streams");
-                        e.printStackTrace();
-                    }
-                }
+                sendFileBinary(file);
+            } else {
+                sendFileAscii(file);
             }
 
         } catch (Exception e) {
             e.printStackTrace();
-            outputWriter.println(FTPStatus.message(FTPStatus.ACTION_ABORTED) + ": Error sending file - " + e.getMessage());
+            outputWriter.println("451 Requested action aborted: Error sending file - " + 
+                               e.getMessage());
         } finally {
             closeDataConnection();
         }
     }
 
-    protected void handleException(IOException e) {
-        e.printStackTrace();
-        outputWriter.println("Error: " + e.getMessage());
+    private void sendFileBinary(File file) throws IOException {
+        BufferedOutputStream fout = null;
+        BufferedInputStream fin = null;
+
+        outputWriter.println("150 Opening binary mode data connection for requested file " + 
+                           file.getName());
+
+        try {
+            fout = new BufferedOutputStream(dataConnection.getOutputStream());
+            fin = new BufferedInputStream(new FileInputStream(file));
+
+            System.out.println("Starting file transmission of " + file.getName());
+
+            byte[] buffer = new byte[1024];
+            int bytesRead;
+            while ((bytesRead = fin.read(buffer, 0, 1024)) != -1) {
+                fout.write(buffer, 0, bytesRead);
+            }
+            fout.flush();
+
+            System.out.println("Completed file transmission of " + file.getName());
+            outputWriter.println("226 File transfer successful. Closing data connection.");
+
+        } catch (IOException e) {
+            System.out.println("Could not read from or write to file streams");
+            e.printStackTrace();
+            outputWriter.println("426 Transfer aborted");
+        } finally {
+            try {
+                if (fin != null) fin.close();
+                if (fout != null) fout.close();
+            } catch (IOException e) {
+                System.out.println("Could not close file streams");
+                e.printStackTrace();
+            }
+        }
     }
 
-    // Abstract methods to be implemented by subclasses
-    public abstract void deleteFile(String[] parts);
+    private void sendFileAscii(File file) throws IOException {
+        outputWriter.println("150 Opening ASCII mode data connection for requested file " + 
+                           file.getName());
 
-    public abstract void createDirectory(String[] parts);
+        BufferedReader rin = null;
+        PrintWriter rout = null;
 
-    public abstract void deleteDirectory(String[] parts);
+        try {
+            rin = new BufferedReader(new FileReader(file));
+            rout = new PrintWriter(dataConnection.getOutputStream(), true);
 
-    public abstract void receiveFile(String[] parts);
+            String line;
+            while ((line = rin.readLine()) != null) {
+                rout.println(line);
+            }
 
-    public abstract void handleRenameFrom(String[] parts);
+            outputWriter.println("226 File transfer successful. Closing data connection.");
+        } catch (IOException e) {
+            System.out.println("Could not read from or write to file streams");
+            e.printStackTrace();
+            outputWriter.println("426 Transfer aborted");
+        } finally {
+            try {
+                if (rout != null) rout.close();
+                if (rin != null) rin.close();
+            } catch (IOException e) {
+                System.out.println("Could not close file streams");
+                e.printStackTrace();
+            }
+        }
+    }
+
+    // ===============================
+    // ABSTRACT METHODS
+    // ===============================
     
+    public abstract void deleteFile(String[] parts);
+    public abstract void createDirectory(String[] parts);
+    public abstract void deleteDirectory(String[] parts);
+    public abstract void receiveFile(String[] parts);
+    public abstract void handleRenameFrom(String[] parts);
     public abstract void handleRenameTo(String[] parts);
-
     public abstract void showHelp(String[] parts);
 }
