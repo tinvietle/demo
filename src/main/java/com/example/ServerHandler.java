@@ -264,9 +264,7 @@ public class ServerHandler implements Runnable {
                     case "XPWD":
                         ftp.printWorkingDirectory(parts);
                         break;
-                    case "HELP":
-                        ftp.showHelp(parts);
-                        break;
+
                     case "CWD":
                         ftp.changeDirectory(parts);
                         break;
@@ -276,6 +274,15 @@ public class ServerHandler implements Runnable {
                     case "EPSV":
                         handleEpsv();
                         break;
+                    case "PORT":
+                        ftp.handlePort(parts);
+                        break;
+                    case "TYPE":
+                        ftp.handleType(parts);
+                        break;
+                    case "EPRT":
+                        ftp.handleEPort(parts);
+                        break;
                     case "SYST":
                         output.println("215 UNIX Type: L8");
                         break;
@@ -284,13 +291,6 @@ public class ServerHandler implements Runnable {
                         output.println(" MDTM");
                         output.println(" SIZE");
                         output.println("211 End");
-                        break;
-                    case "TYPE":
-                        if (parts.length > 1) {
-                            output.println("200 Type set to " + parts[1]);
-                        } else {
-                            output.println("501 Syntax error in parameters");
-                        }
                         break;
                     case "NOOP":
                         output.println("200 NOOP command successful");
@@ -324,6 +324,5 @@ public class ServerHandler implements Runnable {
         int dataPort = 20;
         output.println("229 Entering Extended Passive Mode (|||" + dataPort + "|)");
     }
-
     // ...existing methods...
 }

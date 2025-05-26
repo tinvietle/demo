@@ -47,14 +47,6 @@ public class UserFTPFunctions extends AbstractFTPFunctions {
                 return;
             }
 
-            // Establish data connection first
-            openDataConnectionPassive(dataPort++);
-
-            if (dataConnection == null || dataConnection.isClosed()) {
-                outputWriter.println("425 No data connection was established");
-                return;
-            }
-
             // Binary mode transfer
             if (transferMode == TransferType.BINARY) {
                 BufferedOutputStream fout = null;

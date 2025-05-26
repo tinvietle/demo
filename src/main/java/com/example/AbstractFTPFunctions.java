@@ -28,6 +28,12 @@ public abstract class AbstractFTPFunctions {
     protected PrintWriter dataOutWriter;
     protected int dataPort = 20;
     
+    // Active mode data connection fields
+    protected String clientDataIP;
+    protected int clientDataPort;
+    protected boolean isPassiveMode = true;
+    private boolean debugMode = true;
+    
     // Transfer mode enum
     protected enum TransferType {
         ASCII, BINARY
@@ -113,9 +119,32 @@ public abstract class AbstractFTPFunctions {
         }
     }
 
+    private void debugOutput(String msg) {
+        if (debugMode) {
+        System.out.println("Thread " + ": " + msg);
+        }
+    }
     /**
      * Open a new data connection socket and wait for new incoming connection from client.
      */
+    private void sendMsgToClient(String msg) {
+        outputWriter.println(msg);
+    }
+
+    /**
+     * Send a message to the connected client over the data connection.
+     * 
+     * @param msg Message to be sent
+     */
+    private void sendDataMsgToClient(String msg) {
+        if (dataConnection == null || dataConnection.isClosed()) {
+        sendMsgToClient("425 No data connection was established");
+        debugOutput("Cannot send message, because no data connection is established");
+        } else {
+        dataOutWriter.print(msg + '\r' + '\n');
+        }
+
+    }
     protected void openDataConnectionPassive(int port) {
         try {
             dataSocket = new ServerSocket(port);
@@ -126,6 +155,28 @@ public abstract class AbstractFTPFunctions {
             System.out.println("Could not create data connection.");
             e.printStackTrace();
         }
+    }
+
+    /**
+     * Connect to client socket for data connection. Used for active mode.
+     */
+    protected void openDataConnectionActive(String ipAddress, int port) {
+        try {
+            dataConnection = new Socket(ipAddress, port);
+            dataOutWriter = new PrintWriter(dataConnection.getOutputStream(), true);
+            System.out.println("Data connection - Active Mode - established");
+        } catch (IOException e) {
+            System.out.println("Could not connect to client data socket");
+            e.printStackTrace();
+        }
+    }
+    /**
+     * Set client data connection parameters for active mode
+     */
+    protected void setClientDataConnection(String ipAddress, int port) {
+        this.clientDataIP = ipAddress;
+        this.clientDataPort = port;
+        this.isPassiveMode = false;
     }
 
     /**
@@ -151,6 +202,55 @@ public abstract class AbstractFTPFunctions {
         dataConnection = null;
         dataSocket = null;
     }
+
+    public void handlePort(String[] parts) {
+
+    String args = parts[1];
+    // Extract IP address and port number from arguments
+    String[] stringSplit = args.split(",");
+    String hostName = stringSplit[0] + "." + stringSplit[1] + "." + stringSplit[2] + "." + stringSplit[3];
+
+    int p = Integer.parseInt(stringSplit[4]) * 256 + Integer.parseInt(stringSplit[5]);
+
+    // Initiate data connection to client
+    openDataConnectionActive(hostName, p);
+    sendMsgToClient("200 Command OK");
+  }
+
+  /**
+   * Handler for the EPORT command. The client issues an EPORT command to the
+   * server in active mode, so the server can open a data connection to the client
+   * through the given address and port number.
+   * 
+   * @param args This string is separated by vertical bars and encodes the IP
+   *             version, the IP address and the port number
+   */
+  public void handleEPort(String[] parts) {
+    String args = parts[1];
+    final String IPV4 = "1";
+    final String IPV6 = "2";
+
+    // Example arg: |2|::1|58770| or |1|132.235.1.2|6275|
+    String[] splitArgs = args.split("\\|");
+    String ipVersion = splitArgs[1];
+    String ipAddress = splitArgs[2];
+
+    System.out.println("IP Version: " + ipVersion);
+    System.out.println("IP Address: " + ipAddress);
+
+    System.out.println(IPV4.equals(ipVersion) + " " + IPV6.equals(ipVersion));
+
+    if (!IPV4.equals(ipVersion) && !IPV6.equals(ipVersion)) {
+      throw new IllegalArgumentException("Unsupported IP version");
+    }
+
+    int port = Integer.parseInt(splitArgs[3]);
+
+    // Initiate data connection to client
+    openDataConnectionActive(ipAddress, port);
+    sendMsgToClient("200 Command OK");
+
+  }
 
     public static String getCommonBasePath(String path1, String path2) {
         Path p1 = Paths.get(path1).normalize();
@@ -207,8 +307,9 @@ public abstract class AbstractFTPFunctions {
 
             String[] files = directory.list();
             if (files != null) {
+                sendMsgToClient("125 Opening ASCII mode data connection for file list.");
                 for (String file : files) {
-                    outputWriter.println(file);
+                    sendDataMsgToClient(file);
                 }
                 if (files.length == 0) {
                     outputWriter.println(FTPStatus.message(FTPStatus.COMMAND_OK) + ": Directory is empty");
@@ -216,6 +317,8 @@ public abstract class AbstractFTPFunctions {
             } else {
                 outputWriter.println(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE) + ": Directory cannot be read");
             }
+            sendMsgToClient("226 Transfer complete.");
+            closeDataConnection();
         } catch (IOException e) {
             e.printStackTrace();
             outputWriter.println(FTPStatus.message(FTPStatus.ACTION_ABORTED) + ": Error listing files: " + e.getMessage());
@@ -286,6 +389,20 @@ public abstract class AbstractFTPFunctions {
         }
     }
 
+    public void handleType(String[] parts) {
+        String mode = parts[1];
+        if (mode.toUpperCase().equals("A")) {
+        transferMode = TransferType.ASCII;
+        sendMsgToClient("200 OK");
+        } else if (mode.toUpperCase().equals("I")) {
+        transferMode = TransferType.BINARY;
+        sendMsgToClient("200 OK");
+        } else
+        sendMsgToClient("504 Not OK");
+        ;
+
+    }
+
     public synchronized void sendFile(String[] parts) {
         if (!validateCommand(parts, 2, "Usage: RETR [FILE]")) {
             return;
@@ -307,14 +424,6 @@ public abstract class AbstractFTPFunctions {
 
             if (!file.exists()) {
                 outputWriter.println("550 File does not exist");
-                return;
-            }
-
-            // Establish data connection first
-            openDataConnectionPassive(dataPort++);
-
-            if (dataConnection == null || dataConnection.isClosed()) {
-                outputWriter.println("425 No data connection was established");
                 return;
             }
 
