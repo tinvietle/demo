@@ -7,10 +7,7 @@ public class Client {
     public static void main(String[] args) {
         try{
             // Socket s = new Socket("192.168.1.13",1234);
-
-            
             Scanner scanner = new Scanner(System.in);
-            String sc = scanner.nextLine();
             System.out.print("Enter host address: ");
             String host = scanner.nextLine();
             System.out.print("Enter port number: ");
@@ -26,6 +23,7 @@ public class Client {
             t1.start();
             t2.start();
             
+            scanner.close();
         }
         catch(Exception e){
             System.out.println("Connection error: " + e.getMessage());

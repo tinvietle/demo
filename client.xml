@@ -2,8 +2,8 @@
 <launch4jConfig>
   <dontWrapJar>false</dontWrapJar>
   <headerType>console</headerType>
-  <jar>D:\VGU\3rd\ComNet2\Project\demo\client.jar</jar>
-  <outfile>D:\VGU\3rd\ComNet2\Project\demo\FTPClient.exe</outfile>
+  <jar>C:\D\Mr.VGU\CSE\Third\Summer_Semester\Computer_Network_2\demo\client.jar</jar>
+  <outfile>C:\D\Mr.VGU\CSE\Third\Summer_Semester\Computer_Network_2\demo\FTPClient.exe</outfile>
   <errTitle></errTitle>
   <cmdLine></cmdLine>
   <chdir>.</chdir>
