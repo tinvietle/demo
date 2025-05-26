@@ -170,11 +170,11 @@ public class ServerHandler implements Runnable {
         File userDir = new File(userDirPath);
 
         if (!userDir.exists() || !userDir.isDirectory()) {
-            sendMessage("Directory does not exist: " + userDirPath + " - creating new directory");
+            sendMessage("Directory does not exist: /" + username + " - creating new directory");
             if (userDir.mkdir()) {
-                sendMessage("Directory created successfully: " + userDirPath);
+                sendMessage("Directory created successfully: /" + username);
             } else {
-                sendMessage("Failed to create directory: " + userDirPath);
+                sendMessage("Failed to create directory: /" + username);
                 try {
                     socket.close();    // now caught locally
                 } catch (IOException e) {
@@ -183,7 +183,7 @@ public class ServerHandler implements Runnable {
                 return;
             }
         } else {
-            sendMessage("Directory already exists: " + userDirPath);
+            sendMessage("Directory already exists: /" + username);
         }
 
         sendMessage("Welcome to the FTP server, " + username);
