@@ -167,6 +167,12 @@ demo/
 2. **Import** the Maven project (`pom.xml`).
 3. Navigate to `src/main/java/com/example/`.
 4. Run `Server.java` first to start the server.
+5. Login Credentials:
+   - Username: `tam`
+   - Password: `12345678`
+6. **Open** Windows' `ftp.exe` in your machine. A CLI will pop up in your screen.
+7. **Connect** to the server by entering to the CLI `open {server ip address} {port number}` 
+   - example: `open 192.168.1.13 1234`
 
 > **Note:** You can also build and run the JARs via Maven:
 >
