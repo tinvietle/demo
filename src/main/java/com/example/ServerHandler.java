@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.Set;
 
 import org.bson.Document;
 
@@ -165,23 +166,6 @@ public class ServerHandler implements Runnable {
         return storedPass.equals(pass);
     }
 
-    private boolean createAccount(String user, String pass) {
-        if (usersColl.find(Filters.eq("username", user)).first() != null) {
-            sendMessage("Username already exists.");
-            return false;
-        }
-        
-        Document newUser = new Document("username", user).append("password", pass);
-        try {
-            usersColl.insertOne(newUser);
-            sendMessage("Account created successfully.");
-            return true;
-        } catch (MongoWriteException e) {
-            sendMessage("Error creating account: " + e.getMessage());
-            return false;
-        }
-    }
-
     private boolean recordAnonymousUser(String email) {
         Document newAnonymousLogIn = new Document("email", email)
                                     .append("timeOfLogIn", System.currentTimeMillis());
@@ -305,70 +289,94 @@ public class ServerHandler implements Runnable {
     }
 
     private void handleFTPCommands(String command, String[] parts) {
+        // Handle FTP commands
         switch (command) {
             case "STOR":
                 ftp.receiveFile(parts);
                 break;
+        
             case "RETR":
                 ftp.sendFile(parts);
                 break;
+        
             case "LIST":
             case "NLST":
                 ftp.listFiles(parts);
                 break;
+        
             case "DELE":
                 ftp.deleteFile(parts);
                 break;
+        
             case "MKD":
             case "XMKD":
                 ftp.createDirectory(parts);
                 break;
+        
             case "RMD":
             case "XRMD":
                 ftp.deleteDirectory(parts);
                 break;
+        
             case "RNFR":
                 ftp.handleRenameFrom(parts);
                 break;
+        
             case "RNTO":
                 ftp.handleRenameTo(parts);
                 break;
+        
             case "PWD":
             case "XPWD":
                 ftp.printWorkingDirectory(parts);
                 break;
+        
             case "CWD":
                 ftp.changeDirectory(parts);
                 break;
+        
             case "PASV":
                 handlePasv();
                 break;
+        
             case "EPSV":
                 handleEpsv();
                 break;
+        
             case "PORT":
                 ftp.handlePort(parts);
                 break;
+        
             case "TYPE":
                 ftp.handleType(parts);
                 break;
+        
             case "EPRT":
                 ftp.handleEPort(parts);
                 break;
+        
             case "SYST":
                 output.println("215 UNIX Type: L8");
                 break;
+        
             case "FEAT":
                 output.println("211-Features:");
                 output.println(" MDTM");
                 output.println(" SIZE");
                 output.println("211 End");
                 break;
+        
             case "NOOP":
                 output.println("200 NOOP command successful");
                 break;
+        
+            case "HELP":
+                ftp.showHelp(parts);
+                break;
+        
             default:
                 output.println("502 Command not implemented: " + command);
+                break;
         }
     }
 }

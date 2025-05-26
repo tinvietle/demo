@@ -57,7 +57,8 @@ public class AnonymousFTPFunctions extends AbstractFTPFunctions {
 
     @Override
     public void showHelp(String[] parts) {
-        outputWriter.println("Anonymous user has limited permissions. Available commands: " +
-                           "RETR [FILE], LIST, CWD [DIRECTORY], PWD, HELP, QUIT");
+        outputWriter.println("214-Anonymous users may use the following commands:");
+        outputWriter.println(" get ls cd pwd help quit");
+        outputWriter.println("214 End of HELP info.");
     }
 }

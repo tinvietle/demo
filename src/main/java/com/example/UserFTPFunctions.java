@@ -340,8 +340,8 @@ public class UserFTPFunctions extends AbstractFTPFunctions {
 
     @Override
     public void showHelp(String[] parts) {
-        outputWriter.println("Available commands: STOR, RETR [FILE], LIST, CWD [DIRECTORY], " +
-                           "DELE [FILE], MKD [DIRECTORY], RMD [DIRECTORY], RNFR [SOURCE], " +
-                           "RNTO [DESTINATION], PWD, HELP, QUIT");
+        outputWriter.println("214-The following commands are supported:");
+        outputWriter.println(" put get ls cd delete mkdir rmdir rename pwd help quit");
+        outputWriter.println("214 End of HELP info.");
     }
 }
