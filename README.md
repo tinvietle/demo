@@ -180,6 +180,4 @@ demo/
 > mvn clean package
 > java -jar target/server.jar --config server.xml
 > ```
-5. **Open** Windows' `ftp.exe` in your machine. A CLI will pop up in your screen.
-6. **Connect** to the server by entering to the CLI `open {server ip address} {port number}`
 ---
