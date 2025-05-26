@@ -218,22 +218,49 @@ public class UserFTPFunctions extends AbstractFTPFunctions {
     }
 
     @Override
-    // Modified moveFile to accept source and destination names as parameters
-    public synchronized void moveFile(String[] parts) {
-        if (!validateCommand(parts, 3, "Usage: RNFR [SOURCE] [DESTINATION]")) {
+    public synchronized void handleRenameFrom(String[] parts) {
+        if (!validateCommand(parts, 2, "Usage: RNFR [SOURCE_FILE]")) {
             return;
         }
+        
         String sourceName = parts[1];
-        String destinationName = parts[2];
-        if (!isPathWithinAllowedDirectory(sourceName) || !isPathWithinAllowedDirectory(destinationName)) {
+        if (!isPathWithinAllowedDirectory(sourceName)) {
             outputWriter.println(FTPStatus.message(FTPStatus.FILE_ACTION_NOT_TAKEN)
-                    + ": Access denied - cannot move files outside allowed space");
+                    + ": Access denied - cannot rename files outside allowed space");
             return;
         }
 
         File sourceFile = new File(serverDirectory, sourceName);
+        if (!sourceFile.exists()) {
+            outputWriter.println(FTPStatus.message(FTPStatus.FILE_UNAVAILABLE) + ": Source file does not exist: " + sourceName);
+            return;
+        }
 
-        // Check if destinationName is a absolute or relative path
+        pendingRenameSource = sourceName;
+        outputWriter.println("350 Requested file action pending further information");
+    }
+
+    @Override
+    public synchronized void handleRenameTo(String[] parts) {
+        if (pendingRenameSource == null) {
+            outputWriter.println(FTPStatus.message(FTPStatus.BAD_SEQUENCE) + ": RNTO must be preceded by RNFR");
+            return;
+        }
+        
+        if (!validateCommand(parts, 2, "Usage: RNTO [DESTINATION_FILE]")) {
+            pendingRenameSource = null;
+            return;
+        }
+        
+        String destinationName = parts[1];
+        if (!isPathWithinAllowedDirectory(destinationName)) {
+            outputWriter.println(FTPStatus.message(FTPStatus.FILE_ACTION_NOT_TAKEN)
+                    + ": Access denied - cannot rename files outside allowed space");
+            pendingRenameSource = null;
+            return;
+        }
+
+        File sourceFile = new File(serverDirectory, pendingRenameSource);
         File destFile;
         if (new File(destinationName).isAbsolute()) {
             destFile = new File("src/main/java/com/example/storage/", destinationName);
@@ -241,20 +268,17 @@ public class UserFTPFunctions extends AbstractFTPFunctions {
             destFile = new File(serverDirectory, destinationName);
         }
 
-        if (sourceFile.exists()) {
-            if (sourceFile.renameTo(destFile)) {
-                outputWriter.println(FTPStatus.message(FTPStatus.FILE_ACTION_OK));
-            } else {
-                outputWriter.println(FTPStatus.message(FTPStatus.ACTION_ABORTED) + ": File move operation failed");
-            }
+        if (sourceFile.renameTo(destFile)) {
+            outputWriter.println(FTPStatus.message(FTPStatus.FILE_ACTION_OK) + ": Rename successful");
         } else {
-            outputWriter.println(
-                    FTPStatus.message(FTPStatus.FILE_UNAVAILABLE) + ": Source file does not exist: " + sourceName);
+            outputWriter.println(FTPStatus.message(FTPStatus.ACTION_ABORTED) + ": Rename operation failed");
         }
+        
+        pendingRenameSource = null;
     }
 
     @Override
     public void showHelp(String[] parts) {
-        outputWriter.println("Available commands: STOR, RETR [FILE], LIST, CWD [DIRECTORY], DELE [FILE], MKD [DIRECTORY], RMD [DIRECTORY], RNFR [SOURCE] [DESTINATION], PWD, HELP, QUIT");
+        outputWriter.println("Available commands: STOR, RETR [FILE], LIST, CWD [DIRECTORY], DELE [FILE], MKD [DIRECTORY], RMD [DIRECTORY], RNFR [SOURCE], RNTO [DESTINATION], PWD, HELP, QUIT");
     }
 }

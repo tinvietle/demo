@@ -39,6 +39,9 @@ public abstract class AbstractFTPFunctions {
         ASCII, BINARY
     }
     protected TransferType transferMode = TransferType.BINARY;
+    
+    // Rename operation state
+    protected String pendingRenameSource = null;
 
     public static class FTPStatus {
         public static final int COMMAND_OK = 200;
@@ -518,7 +521,9 @@ public abstract class AbstractFTPFunctions {
 
     public abstract void receiveFile(String[] parts);
 
-    public abstract void moveFile(String[] parts);
+    public abstract void handleRenameFrom(String[] parts);
+    
+    public abstract void handleRenameTo(String[] parts);
 
     public abstract void showHelp(String[] parts);
 }

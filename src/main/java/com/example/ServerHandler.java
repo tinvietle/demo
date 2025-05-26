@@ -258,13 +258,15 @@ public class ServerHandler implements Runnable {
                         ftp.deleteDirectory(parts);
                         break;
                     case "RNFR":
-                        ftp.moveFile(parts);
+                        ftp.handleRenameFrom(parts);
+                        break;
+                    case "RNTO":
+                        ftp.handleRenameTo(parts);
                         break;
                     case "PWD":
                     case "XPWD":
                         ftp.printWorkingDirectory(parts);
                         break;
-
                     case "CWD":
                         ftp.changeDirectory(parts);
                         break;

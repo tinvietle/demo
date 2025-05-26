@@ -30,13 +30,18 @@ public class AnonymousFTPFunctions extends AbstractFTPFunctions {
     }
 
     @Override
-    public void moveFile(String[] parts) {
-        deny("Moving files");
+    public void showHelp(String[] parts) {
+        outputWriter.println("Anonymous user has limited permissions. Available commands: RETR [FILE], LIST, CWD [DIRECTORY], PWD, HELP, QUIT");
     }
 
     @Override
-    public void showHelp(String[] parts) {
-        outputWriter.println("Anonymous user has limited permissions. Available commands: RETR [FILE], LIST, CWD [DIRECTORY], PWD, HELP, QUIT");
+    public void handleRenameFrom(String[] parts) {
+        deny("Renaming files");
+    }
+
+    @Override
+    public void handleRenameTo(String[] parts) {
+        deny("Renaming files");
     }
 
     private void deny(String action) {
