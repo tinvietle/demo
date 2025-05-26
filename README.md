@@ -156,7 +156,7 @@ demo/
 
 ### ▶️ Running the Executable Binaries
 
-1. **Open** the `DEMO/` folder in your file explorer.
+1. **Make sure** the executable files are in `demo/` folder.
 2. **Verify** the `JRE/` subfolder contains both `bin/` and `lib/` directories.
 3. **Launch**:
 
@@ -171,7 +171,7 @@ demo/
        - Variable Value: Path to `JRE` folder.
 ---
 
-### 🧑‍💻 Running from Source
+### 🧑‍💻 Running from Command Line
 
 1. Open your preferred IDE (e.g., VS Code, IntelliJ IDEA).
 2. **Import** the Maven project (`pom.xml`).
