@@ -32,11 +32,11 @@ The project is developed as part of the Computer Network 2 course at Vietnamese-
 
 **Available commands for authenticated user in their own directory:** 
 
-`put, get [FILE], ls, cd [DIRECTORY], rm [FILE], mkdir [DIRECTORY], rmdir [DIRECTORY], mv [SOURCE] [DESTINATION], pwd, help, quit`
+`put get ls cd delete mkdir rmdir rename pwd help quit`
 
 **Available commands for unauthenticated user in the public directory:** 
 
-`get [FILE], ls, cd [DIRECTORY], pwd, help, quit`
+`get ls cd pwd help quit`
 
 ### 🎯 Core (6 points)
 
