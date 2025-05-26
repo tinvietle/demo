@@ -1,4 +1,4 @@
-# FTP Simulator (Team TAM)
+# Windows FTP Simulator (Team TAM)
 
 ## 📑 Table of Contents
 - [Summary](#summary)  
@@ -152,14 +152,16 @@ demo/
 
 ### ▶️ Running the Executable Binaries
 
-1. **Open** the `DEMO/` folder in your file explorer.
+1. **Make sure** the executable files are in `demo/` folder.
 2. **Verify** the `JRE/` subfolder contains both `bin/` and `lib/` directories.
 3. **Launch**:
 
    * Double-click `FTPServer.exe` to start the server.
+4. **Open** Windows' `ftp.exe` in your machine. A CLI will pop up in your screen.
+5. **Connect** to the server by entering to the CLI `open {server ip address} {port number}`
 ---
 
-### 🧑‍💻 Running from Source
+### 🧑‍💻 Running from Command Line
 
 1. Open your preferred IDE (e.g., VS Code, IntelliJ IDEA).
 2. **Import** the Maven project (`pom.xml`).
@@ -172,5 +174,6 @@ demo/
 > mvn clean package
 > java -jar target/server.jar --config server.xml
 > ```
-
+5. **Open** Windows' `ftp.exe` in your machine. A CLI will pop up in your screen.
+6. **Connect** to the server by entering to the CLI `open {server ip address} {port number}`
 ---
