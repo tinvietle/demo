@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.util.Set;
 
 import org.bson.Document;
 
@@ -171,10 +170,8 @@ public class ServerHandler implements Runnable {
                                     .append("timeOfLogIn", System.currentTimeMillis());
         try {
             anonymColl.insertOne(newAnonymousLogIn);
-            sendMessage("Anonymous user recorded successfully.");
             return true;
         } catch (MongoWriteException e) {
-            sendMessage("Error recording anonymous user: " + e.getMessage());
             return false;
         }
     }
@@ -202,10 +199,6 @@ public class ServerHandler implements Runnable {
 
         output.println("220 Welcome to the FTP server, " + username);
         output.println("214 Type \"help\" for a list of available commands.");
-    }
-
-    private void sendMessage(String message) {
-        output.println(message);
     }
 
     private void handlePasv() {
