@@ -181,6 +181,9 @@ demo/
 3. Navigate to `src/main/java/com/example/`.
 4. Run `Server.java` first to start the server.
 5. Run `Client.java` to start the client.
+6. Login credentials:
+   - Username: 'tam'
+   - Password: '12345678'
 
 > **Note:** You can also build and run the JARs via Maven:
 >
