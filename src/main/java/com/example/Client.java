@@ -22,8 +22,6 @@ public class Client {
             Thread t2 = new Thread(receiving);
             t1.start();
             t2.start();
-            
-            scanner.close();
         }
         catch(Exception e){
             System.out.println("Connection error: " + e.getMessage());
