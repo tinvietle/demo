@@ -355,15 +355,6 @@ public class ServerHandler implements Runnable {
             case "EPRT":
                 ftp.handleEPort(parts);
                 break;
-            case "SYST":
-                output.println("215 UNIX Type: L8");
-                break;
-            case "FEAT":
-                output.println("211-Features:");
-                output.println(" MDTM");
-                output.println(" SIZE");
-                output.println("211 End");
-                break;
             case "NOOP":
                 output.println("200 NOOP command successful");
                 break;
