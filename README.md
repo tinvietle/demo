@@ -1,4 +1,4 @@
-# FTP Simulator (Team TAM)
+# Custom FTP Simulator (Team TAM)
 
 ## 📑 Table of Contents
 - [Summary](#summary)  
