@@ -162,6 +162,13 @@ demo/
 
    * Double-click `FTPServer.exe` to start the server.
    * Double-click `FTPClient.exe` to start the client.
+   * 
+4. **Verify Java Path (Optional):**
+   - If the game doesn't detect the included JRE, set the Java path manually:
+     - Open **"Edit the system environment variables"** and click **Environment Variables**.
+     - Under **System Variables**, click **New**, and add:
+       - Variable Name: `JAVA_HOME`
+       - Variable Value: Path to `JRE` folder.
 ---
 
 ### 🧑‍💻 Running from Source
