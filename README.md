@@ -1,4 +1,4 @@
-# FTP Simulator (Team TAM)
+# Windows FTP Simulator (Team TAM)
 
 ## 📑 Table of Contents
 - [Summary](#summary)  
@@ -9,7 +9,7 @@
 
 ## 🗒️ Summary
 
-This repository, developed by **Team TAM**, provides a simulation of an FTP server and client in Java, complete with authentication powered by MongoDB. Our implementation takes reference from the guide from Colorado State University: [reference link](https://www.cs.colostate.edu/helpdocs/ftp.html). 
+This repository, developed by **Team TAM**, provides a simulation of an FTP server and client in Java, complete with authentication powered by MongoDB. Our implementation takes reference from the guide from this Github Project: [reference link](https://github.com/pReya/ftpServer.git). Using this project, we can connect our FTP Server with the Windows' built-in FTP client (`ftp.exe`), allowing users to perform file operations such as uploading, downloading, and managing directories without needing an extra FTP client application.
 
 The project is developed as part of the Computer Network 2 course at Vietnamese-German University (Binh Duong, Vietnam) in the Summer Semester of 2025, which was taught by Dr. Truong Dinh Huy and Mr. Le Duy Hung.
 
@@ -32,11 +32,11 @@ The project is developed as part of the Computer Network 2 course at Vietnamese-
 
 **Available commands for authenticated user in their own directory:** 
 
-`put, get [FILE], ls, cd [DIRECTORY], rm [FILE], mkdir [DIRECTORY], rmdir [DIRECTORY], mv [SOURCE] [DESTINATION], pwd, help, quit`
+`put get ls cd delete mkdir rmdir rename pwd help quit`
 
 **Available commands for unauthenticated user in the public directory:** 
 
-`get [FILE], ls, cd [DIRECTORY], pwd, help, quit`
+`get ls cd pwd help quit`
 
 ### 🎯 Core (6 points)
 
@@ -152,19 +152,27 @@ demo/
 
 ### ▶️ Running the Executable Binaries
 
-1. **Open** the `DEMO/` folder in your file explorer.
+1. **Make sure** the executable files are in `demo/` folder.
 2. **Verify** the `JRE/` subfolder contains both `bin/` and `lib/` directories.
 3. **Launch**:
 
    * Double-click `FTPServer.exe` to start the server.
+4. **Open** Windows' `ftp.exe` in your machine. A CLI will pop up in your screen.
+5. **Connect** to the server by entering to the CLI `open {server ip address} {port number}`
 ---
 
-### 🧑‍💻 Running from Source
+### 🧑‍💻 Running from Command Line
 
 1. Open your preferred IDE (e.g., VS Code, IntelliJ IDEA).
 2. **Import** the Maven project (`pom.xml`).
 3. Navigate to `src/main/java/com/example/`.
 4. Run `Server.java` first to start the server.
+5. Login Credentials:
+   - Username: `tam`
+   - Password: `12345678`
+6. **Open** Windows' `ftp.exe` in your machine. A CLI will pop up in your screen.
+7. **Connect** to the server by entering to the CLI `open {server ip address} {port number}` 
+   - example: `open 192.168.1.13 1234`
 
 > **Note:** You can also build and run the JARs via Maven:
 >
@@ -172,5 +180,4 @@ demo/
 > mvn clean package
 > java -jar target/server.jar --config server.xml
 > ```
-
 ---
