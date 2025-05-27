@@ -297,7 +297,7 @@ public abstract class AbstractFTPFunctions {
 
         try {
             File targetDir;
-
+            System.out.println(new File(newDirectory).isAbsolute());
             if (new File(newDirectory).isAbsolute()) {
                 targetDir = new File("src/main/java/com/example/storage/", newDirectory);
             } else {
@@ -352,6 +352,7 @@ public abstract class AbstractFTPFunctions {
             if (files != null) {
                 sendMsgToClient("125 Opening ASCII mode data connection for file list.");
                 for (String file : files) {
+                    System.out.println("Sending file: " + file);
                     sendDataMsgToClient(file);
                 }
                 if (files.length == 0) {
